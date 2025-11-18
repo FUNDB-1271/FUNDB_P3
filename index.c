@@ -42,6 +42,7 @@ Index *index_init(void) {
         ind->size = INDEX_INIT_SIZE;
         ind->used = 0;
     }
+
     return ind;
 }
 
@@ -50,7 +51,7 @@ void index_free(Index *ind) {
     if (ind) 
     {
         if (ind->books) {
-            for (i = 0 ; i < ind->used ; i++) book_free(ind->books[i]);
+            for (i = 0 ; i < ind->used ; i++) if (ind->books[i]) book_free(ind->books[i]);
             free(ind->books);
         }
         ind->books = NULL;
