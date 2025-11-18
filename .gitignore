@@ -1,0 +1,5 @@
+.vscode/
+*.o 
+test*
+library
+*_test*
