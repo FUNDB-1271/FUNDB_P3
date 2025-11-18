@@ -18,18 +18,25 @@ struct _index {
 
 Index *index_init(void) {
     Index *ind = malloc(sizeof(Index));
-    if (ind) {
+    if (ind != NULL) {
         ind->books = (IndexBook *) malloc(INDEX_INIT_SIZE * sizeof(IndexBook));
+        if (ind->books == NULL){
+            free(ind);
+            return NULL;
+        }
         ind->size = INDEX_INIT_SIZE;
         ind->used = 0;
     }
+
     return ind;
 }
 
 void index_free(Index *ind) {
-    if (ind) 
+    if (ind != NULL) 
     {
-        if (ind->books) free(ind->books);
+        if (ind->books != NULL){
+            free(ind->books);
+        } 
         ind->books = NULL;
         free(ind);
     }
