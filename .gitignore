@@ -3,3 +3,4 @@
 test*
 library
 *_test*
+local.mk

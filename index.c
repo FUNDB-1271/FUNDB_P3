@@ -100,8 +100,7 @@ int index_add(Index *ind, IndexBook *book) {
 }
 
 int index_save(Index *ind, char *file) {
-    ssize_t k = 0;
-    int check = 0;
+    size_t k = 0;
     FILE *temp = NULL;
 
     if (!ind || !ind->books || !file) return -1;
