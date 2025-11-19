@@ -16,16 +16,7 @@ struct _index {
     size_t size;
 };
 
-struct _indexdeletedbook {
-    size_t register_size;
-    size_t offset;
-};
 
-struct _deletedlist {
-    IndexDeletedBook *deleted;
-    size_t used;
-    size_t size;
-};
 
 IndexBook *book_init(int key, long int offset, size_t size) {
     IndexBook *book = (IndexBook *) malloc(sizeof(IndexBook));
