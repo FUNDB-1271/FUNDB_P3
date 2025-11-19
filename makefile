@@ -3,13 +3,18 @@ CC=gcc
 OBJ=library.o
 EXE=library
 
+
 all: $(EXE)
 
+-include local.mk
+run: 
+	./$(EXE) first_fit database
+
 library: $(OBJ)
-	$(CC) $(OBJ) -o $@ 
+	$(CC) -o $@ $(OBJ)
 
 library.o: library.c
-	$(CC) $(CFLAGS) -c $< -o library.o
+	$(CC) $(CFLAGS) -c $< 
 	
 clean: 
 	rm *.o $(EXE)
