@@ -49,7 +49,10 @@ int index_add(Index *ind, IndexBook *book) {
     {
         ind->size *= 2;
         ind->books = realloc(ind->books, ind->size * sizeof(IndexBook));
-        if (!ind->books) ind->size = 0; return - 1;
+        if (!ind->books){
+            ind->size = 0; 
+            return - 1;
+        } 
     }
 
     while (a <= b) 
