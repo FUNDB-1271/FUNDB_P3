@@ -9,13 +9,15 @@
 #define WORST_FIT "worst_fit"
 #define FIRST_FIT "first_fit"
 
-void _library_init();
+void _library_init(char *dbname, FILE **db, FILE **ind, FILE **lst, DeletedList **dellst, Index **index);
 
-void _library_cleanup();
+void _library_cleanup(FILE **db, FILE **ind, FILE **lst, DeletedList **dellst, Index **index);
 
 void loop();
 
 int main(int argc, char *argv[]) {
+    DeletedList *lst = NULL;
+    Index *ind = NULL;
     FILE *data_file = NULL, *index_file = NULL, *deleted_file = NULL;
     char dataf_name[32];
     char indexf_name[32];
@@ -33,45 +35,76 @@ int main(int argc, char *argv[]) {
         return 0;
     }
     
-    snprintf(dataf_name, sizeof(dataf_name), "%s.db", argv[2]);
-    snprintf(indexf_name, sizeof(indexf_name), "%s.ind", argv[2]);
-    snprintf(deletedf_name, sizeof(deletedf_name), "%s.lst", argv[2]);
 
-    /* IN REALITY THESE FILE INITIALIZATIONS WILL HAPPEN IN LIBRARY INIT */
-
-    /* revise these file permissions */
-    if (!(data_file = fopen(dataf_name, "ab+"))) 
-    {
-        fprintf(stdout, "Error opening file %s\n", dataf_name);
-        return 1;
-    }
-
-    if (!(index_file = fopen(indexf_name, "ab+"))) 
-    {
-        fprintf(stdout, "Error opening file %s\n", indexf_name);
-        fclose(data_file);
-        return 1;
-    }
-
-    if (!(deleted_file = fopen(deletedf_name, "w"))) 
-    {
-        fprintf(stdout, "Error opening file %s\n", deletedf_name);
-        fclose(data_file);
-        fclose(index_file);
-        return 1;
-    }
-
-    _library_init(/* ... */);
+    _library_init(argv[2], &data_file, &index_file, &deleted_file, &lst, &ind);
 
     loop(/* ... */);
 
-    _library_cleanup(/* ... */);
+    _library_cleanup(&data_file, &index_file, &deleted_file, &lst, &ind);
 
     return 0;
 }
 
-void loop() {}
+void _library_init(char *dbname, FILE **db, FILE **ind, FILE **lst, DeletedList **dellst, Index **index) {
+    char dataf_name[32];
+    char indexf_name[32];
+    char deletedf_name[32];
+    
+    if (!dbname || !db || !ind || !lst || !dellst || !index || srlen(dbname) > 31) return;
 
-void _library_init() {}
+    snprintf(dataf_name, sizeof(dataf_name), "%s.db", dbname);
+    snprintf(indexf_name, sizeof(indexf_name), "%s.ind", dbname);
+    snprintf(deletedf_name, sizeof(deletedf_name), "%s.lst", dbname);
 
-void _library_cleanup() {}
+    if (!(*db = fopen(dataf_name, "wb+"))) 
+    {
+        fprintf(stdout, "Error opening file %s\n", dataf_name);
+        return;
+    }
+
+    if (!(*ind = fopen(indexf_name, "wb+"))) 
+    {
+        fprintf(stdout, "Error opening file %s\n", indexf_name);
+        fclose(*db);
+        return;
+    }
+
+    if (!(*lst = fopen(deletedf_name, "wb+"))) 
+    {
+        fprintf(stdout, "Error opening file %s\n", deletedf_name);
+        fclose(*db);
+        fclose(*ind);
+        return;
+    }
+
+    if (!(*index = index_init()))
+    {
+        fprintf(stdout, "Error allocating deleted list structure\n");
+        fclose(*db);
+        fclose(*ind);
+        fclose(*lst);
+        return;
+    }
+
+    if (!(*dellst = deletedlist_init()))
+    {
+        fprintf(stdout, "Error allocating index structure\n");
+        index_free(*ind);
+        fclose(*db);
+        fclose(*ind);
+        fclose(*lst);
+        return;
+    }
+}
+
+void loop() {
+
+}
+
+void _library_cleanup(FILE **db, FILE **ind, FILE **lst, DeletedList **dellst, Index **index) {
+    if (*db) fclose(*db);
+    if (*ind) fclose(*ind);
+    if (*lst) fclose(*lst);
+    if (*dellst) deletedlist_free(*dellst);
+    if (*index) index_free(*index);
+}
