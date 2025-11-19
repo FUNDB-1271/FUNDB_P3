@@ -28,8 +28,10 @@ int index_add(Index *ind, IndexBook *book);
 
 int index_save(Index *ind, char *file);
 
-Index *index_init_from_file(char *filename);
+Index *index_init_from_file(FILE *index_fp);
 
 void index_print(Index *ind);
+
+int index_del(Index *ind, int key);
 
 #endif

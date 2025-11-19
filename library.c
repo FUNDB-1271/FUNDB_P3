@@ -5,23 +5,35 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define NAME_MAX 32
+
+#define ERR -1
+#define OK !(ERR)
+
 #define BEST_FIT "best_fit"
 #define WORST_FIT "worst_fit"
 #define FIRST_FIT "first_fit"
 
-void _library_init(char *dbname, FILE **db, FILE **ind, FILE **lst, DeletedList **dellst, Index **index);
+typedef struct {
+    FILE *data_fp;
+    FILE *index_fp;
+    FILE *deleted_fp;
+/*   
+    DeletedList *del_list;
+*/
+    Index *index;
+    int strategy;
+    char dbname[NAME_MAX];
+    } DBInfo;
 
-void _library_cleanup(FILE **db, FILE **ind, FILE **lst, DeletedList **dellst, Index **index);
+int _library_init(char *dbname, char *strategy, DBInfo *database);
+
+void _library_cleanup(DBInfo **database);
 
 void loop();
 
 int main(int argc, char *argv[]) {
-    DeletedList *lst = NULL;
-    Index *ind = NULL;
-    FILE *data_file = NULL, *index_file = NULL, *deleted_file = NULL;
-    char dataf_name[32];
-    char indexf_name[32];
-    char deletedf_name[32];
+    DBInfo *database = NULL;
 
     /* no tocar este mensaje */
     if (argc != 3) {
@@ -34,77 +46,135 @@ int main(int argc, char *argv[]) {
         fprintf(stdout, "Unknown search strategy %s", argv[1]);
         return 0;
     }
-    
 
-    _library_init(argv[2], &data_file, &index_file, &deleted_file, &lst, &ind);
+    if (strlen(argv[2]) > NAME_MAX - 1) {
+        fprintf(stderr, "File name [%s] too large, maximum allowed length of path: %d\n", argv[2], NAME_MAX - 1);
+        return ERR;
+    }
+
+    if (!(database = (DBInfo *) malloc(sizeof(DBInfo)))) {
+        fprintf(stderr, "Error reservando memoria para base de datos\n");
+        return ERR;
+    }
+
+    if (_library_init(argv[2], argv[1], database) != OK) {
+        fprintf(stderr, "Failed to init database\n");
+        _library_cleanup(&database);
+        return ERR;
+    }
 
     loop(/* ... */);
 
-    _library_cleanup(&data_file, &index_file, &deleted_file, &lst, &ind);
+    _library_cleanup(&database);
+
 
     return 0;
 }
 
-void _library_init(char *dbname, FILE **db, FILE **ind, FILE **lst, DeletedList **dellst, Index **index) {
-    char dataf_name[32];
-    char indexf_name[32];
-    char deletedf_name[32];
+int _library_init(char *dbname, char *strategy, DBInfo *database){
+    char dataf_name[NAME_MAX];
+    char indexf_name[NAME_MAX];
+    char deletedf_name[NAME_MAX];
+    size_t len;
     
-    if (!dbname || !db || !ind || !lst || !dellst || !index || srlen(dbname) > 31) return;
+    if (!dbname || !strategy || !database) return ERR;
 
     snprintf(dataf_name, sizeof(dataf_name), "%s.db", dbname);
     snprintf(indexf_name, sizeof(indexf_name), "%s.ind", dbname);
     snprintf(deletedf_name, sizeof(deletedf_name), "%s.lst", dbname);
 
-    if (!(*db = fopen(dataf_name, "wb+"))) 
-    {
-        fprintf(stdout, "Error opening file %s\n", dataf_name);
-        return;
+    if (strcmp(strategy, BEST_FIT) == 0) {
+        database->strategy = BESTFIT;
+    } else if (strcmp(strategy, WORST_FIT) == 0) { 
+        database->strategy = WORSTFIT;
+    } else {
+        database->strategy = FIRSTFIT;
     }
 
-    if (!(*ind = fopen(indexf_name, "wb+"))) 
-    {
-        fprintf(stdout, "Error opening file %s\n", indexf_name);
-        fclose(*db);
-        return;
+    len = (strlen(dbname) < NAME_MAX - 1) ? strlen(dbname) : NAME_MAX - 1;
+    strncpy(database->dbname, dbname, len);
+    database->dbname[len] = '\0';
+
+    database->data_fp = fopen(dataf_name, "r+b");
+    if (!(database->data_fp)) database->data_fp = fopen(dataf_name, "w+b");
+    if (!(database->data_fp)) {
+        fprintf(stderr, "Error opening or creating file: %s\n", dataf_name);
+        return ERR;
+    }
+    
+    database->index_fp = fopen(indexf_name, "r+b");
+    if (!(database->index_fp)) database->index_fp = fopen(indexf_name, "w+b");
+    if (!(database->index_fp)) {
+        fprintf(stderr, "Error opening or creating file: %s\n", indexf_name);
+        fclose(database->data_fp);
+        return ERR;
     }
 
-    if (!(*lst = fopen(deletedf_name, "wb+"))) 
-    {
-        fprintf(stdout, "Error opening file %s\n", deletedf_name);
-        fclose(*db);
-        fclose(*ind);
-        return;
+    database->deleted_fp = fopen(deletedf_name, "r+b");
+    if (!(database->deleted_fp)) database->deleted_fp = fopen(deletedf_name, "w+b");
+    if (!(database->deleted_fp)) {
+        fprintf(stderr, "Error opening or crating file: %s\n", deletedf_name);
+        fclose(database->data_fp);
+        fclose(database->index_fp);
+        return ERR;
     }
 
-    if (!(*index = index_init()))
-    {
-        fprintf(stdout, "Error allocating deleted list structure\n");
-        fclose(*db);
-        fclose(*ind);
-        fclose(*lst);
-        return;
+    if (!(database->index = index_init_from_file(database->index_fp))) {
+        fprintf(stderr, "Error loading index structure\n");
+        fclose(database->data_fp);        
+        fclose(database->index_fp);
+        fclose(database->deleted_fp);
+        return ERR;        
     }
 
-    if (!(*dellst = deletedlist_init()))
-    {
-        fprintf(stdout, "Error allocating index structure\n");
-        index_free(*ind);
-        fclose(*db);
-        fclose(*ind);
-        fclose(*lst);
-        return;
+
+/*
+    if (!(database->del_list = deletedlist_init_from_file(database->dbname))) {
+        fprintf(stderr, "Error loading deleted list structure\n");
+        index_free(database->index);
+        fclose(database->data_fp);
+        fclose(database->index_fp);
+        fclose(database->deleted_fp);
+        return ERR;
     }
+*/
+    return OK;
 }
 
 void loop() {
 
 }
 
-void _library_cleanup(FILE **db, FILE **ind, FILE **lst, DeletedList **dellst, Index **index) {
-    if (*db) fclose(*db);
-    if (*ind) fclose(*ind);
-    if (*lst) fclose(*lst);
-    if (*dellst) deletedlist_free(*dellst);
-    if (*index) index_free(*index);
+void _library_cleanup(DBInfo **database) {
+    if(*database) {
+        if ((*database)->data_fp) 
+        { 
+            fclose((*database)->data_fp); 
+            (*database)->data_fp = NULL; 
+        }
+        if ((*database)->index_fp) 
+        { 
+            fclose((*database)->index_fp); 
+            (*database)->index_fp = NULL; 
+        }
+        if ((*database)->deleted_fp) 
+        { 
+            fclose((*database)->deleted_fp); 
+            (*database)->deleted_fp = NULL; 
+        }
+/*
+        if ((*database)->del_list) 
+        { 
+            deletedlist_free((*database)->del_list); 
+            (*database)->del_list = NULL; 
+        }
+*/  
+        if ((*database)->index) 
+        { 
+            index_free((*database)->index); 
+            (*database)->index = NULL; 
+        }
+        free(*database);
+        *database = NULL;
+    }
 }

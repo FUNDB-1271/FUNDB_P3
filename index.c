@@ -140,14 +140,11 @@ write_fail:
     return -1;
 }
 
-Index *index_init_from_file(char *filename) {
+Index *index_init_from_file(FILE *index_fp) {
     Index *index = NULL;
-    FILE *f = NULL;
     IndexBook *book = NULL;
 
-    if (!filename) return NULL;
-
-    if (!(f = fopen(filename, "rb"))) goto cleanup;
+    if (!index_fp) return NULL;
 
     if (!(index = (Index *) malloc(sizeof(Index)))) goto cleanup;
 
@@ -171,9 +168,9 @@ Index *index_init_from_file(char *filename) {
         }
 
         /* lectura binaria */
-        if (fread(&key, sizeof(key), 1, f) != 1) break; /* fin del fichero */
-        if (fread(&offset, sizeof(offset), 1, f) != 1) goto cleanup; /* lectura parcial - error */
-        if (fread(&size, sizeof(size), 1, f) != 1) goto cleanup;
+        if (fread(&key, sizeof(key), 1, index_fp) != 1) break; /* fin del fichero */
+        if (fread(&offset, sizeof(offset), 1, index_fp) != 1) goto cleanup; /* lectura parcial - error */
+        if (fread(&size, sizeof(size), 1, index_fp) != 1) goto cleanup;
 
         /* inicializacion de book struct */
         book = book_init(key, offset, size);
@@ -183,14 +180,14 @@ Index *index_init_from_file(char *filename) {
         index->books[index->used++] = book;
     }
 
-    fclose(f);
+    fclose(index_fp);
 
 
     return index;
 
 cleanup: 
     {
-        if (f) fclose(f);
+        if (index_fp) fclose(index_fp);
         if (book) book_free(book);
         if (index) index_free(index);
     }
@@ -208,94 +205,38 @@ void index_print(Index *ind) {
     }   
 }
 
-size_t find_offset_for_insert(DeletedList *dlist, size_t record_size, int strategy) {
-    assert(dlist != NULL);
-    assert(strategy == BESTFIT || strategy == WORSTFIT || strategy == FIRSTFIT);
+int index_del(Index *ind, int key) {
+    int a, b, m;
+    int flag = 0;
 
-    if (dlist->used == 0){
-        return (size_t)-1; 
+    if (!ind || !ind->books || ind->used == 0) return -1;
+
+    a = 0;
+    b = ind->used - 1;
+
+    while (a <= b) 
+    {
+        m = a + (b - a) / 2; /* minimize overflow */
+
+        if (key == ind->books[m]->key) {
+            flag = 1;
+            break;
+        } else if (key < ind->books[m]->key) {
+            b = m - 1;
+        } else {
+            a = m + 1;
+        } 
     } 
 
-    size_t best_index = (size_t)-1;
-
-    switch(strategy) {
-        case FIRSTFIT:
-            for (size_t i = 0; i < dlist->used; i++) {
-                if (dlist->deleted[i].register_size >= record_size) {
-                    best_index = i;
-                    break;
-                }
-            }
-            break;
-
-        case BESTFIT:
-            {
-                size_t min_size = (size_t)-1;
-                for (size_t i = 0; i < dlist->used; i++) {
-                    if (dlist->deleted[i].register_size >= record_size &&
-                        dlist->deleted[i].register_size < min_size) {
-                        min_size = dlist->deleted[i].register_size;
-                        best_index = i;
-                    }
-                }
-            }
-            break;
-
-        case WORSTFIT:
-            {
-                size_t max_size = 0;
-                for (size_t i = 0; i < dlist->used; i++) {
-                    if (dlist->deleted[i].register_size >= record_size &&
-                        dlist->deleted[i].register_size > max_size) {
-                        max_size = dlist->deleted[i].register_size;
-                        best_index = i;
-                    }
-                }
-            }
-            break;
-
-        default:
-            return (size_t)-1; 
-    }
-
-    return best_index;
-}
-
-int index_remove(Index *ind, DeletedList *dlist, int key) {
-    assert(ind != NULL);
-    assert(dlist != NULL);
-
-    size_t i;
-    for (i = 0; i < ind->used; i++) {
-        if (ind->books[i]->key == key) {
-            IndexBook *book = ind->books[i];
-
-            if (dlist->used == dlist->size) {
-                size_t new_size;
-                if (dlist->size != 0) {
-                    new_size = dlist->size * 2;
-                } else {
-                    new_size = 4;
-                }
-                IndexDeletedBook *temp = realloc(dlist->deleted, new_size * sizeof(IndexDeletedBook));
-                if (temp == NULL){
-                    return -1;
-                }
-                dlist->deleted = temp;
-                dlist->size = new_size;
-            }
-            dlist->deleted[dlist->used].offset = book->offset;
-            dlist->deleted[dlist->used].register_size = book->size;
-            dlist->used++;
-
-            book_free(book);
-            if (i < ind->used - 1) {
-                memmove(&ind->books[i], &ind->books[i + 1], (ind->used - i - 1) * sizeof(IndexBook *));
-            }
+    if (flag) 
+    {
+        book_free(ind->books[m]);
+        if (m < (int) ind->used - 1) {
+            memmove(&(ind->books[m]), &(ind->books[m+1]), (ind->used - m - 1) * sizeof(IndexBook *));
             ind->used--;
-
-            return 0; 
+            ind->books[ind->used] = NULL;
         }
+        return 0;
     }
 
     return -1;
