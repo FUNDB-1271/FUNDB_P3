@@ -12,10 +12,6 @@ typedef struct _indexbook IndexBook;
 
 typedef struct _index Index;
 
-typedef struct _indexdeletedbook IndexDeletedBook;
-
-typedef struct _deletedlist DeletedList;
-
 IndexBook *book_init(int key, long int offset, size_t size);
 
 void book_free(IndexBook *book);
