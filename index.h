@@ -4,10 +4,17 @@
 #include <stdio.h>
 
 #define INDEX_INIT_SIZE 4
+#define BESTFIT 0
+#define WORSTFIT 1
+#define FIRSTFIT 2
 
 typedef struct _indexbook IndexBook;
 
 typedef struct _index Index;
+
+typedef struct _indexdeletedbook IndexDeletedBook;
+
+typedef struct _deletedlist DeletedList;
 
 IndexBook *book_init(int key, long int offset, size_t size);
 
