@@ -42,49 +42,46 @@ void deletedlist_free(DeletedList *deletedlist){
 }
 
 int deletedlist_add(DeletedList *deletedlist, IndexDeletedBook *indexdeletedbook){
-    size_t i;
+    int i, j;
+    IndexDeletedBook temp;
 
     if (deletedlist == NULL || indexdeletedbook == NULL){
         return -1;
     }
 
-    if (deletedlist->size - deletedlist->used < sizeof(IndexDeletedBook)){
-        deletedlist->size += 1;
-        deletedlist->deleted = (IndexDeletedBook*)realloc(deletedlist, deletedlist->size);
-        if (deletedlist == NULL){
+    if (deletedlist->size == deletedlist->used){
+        deletedlist->size *= 2;
+        if (deletedlist->size == 0){
+            deletedlist->size = 1;
+        }
+        deletedlist->deleted = realloc(deletedlist->deleted, deletedlist->size * sizeof(IndexDeletedBook));
+        if (deletedlist->deleted == NULL){
             return -1;
         }
     }
+    else if(deletedlist->size < deletedlist->used){
+        return -1;
+    }
 
-    for(i = 0; i < deletedlist->size-1; i++){
-        if (deletedlist->deleted[i] <= deletedlist->deleted[i+1]){
-            deletedlist->deleted[deletedlist->size-1] = *indexdeletedbook;
-            deletedlist->used ++;
-            return 0;
+    /*Insertamos en la posición correcta el indexdeletedbook*/
+    for (i = 0; i < deletedlist->used; i++) {
+    if (indexdeletedbook->register_size < deletedlist->deleted[i].register_size) {
+        for (j = deletedlist->used; j > i; j--) {
+            deletedlist->deleted[j] = deletedlist->deleted[j-1];
         }
+        deletedlist->deleted[i] = *indexdeletedbook;
+        deletedlist->used++;
+        return 0;
+    }
     }
 
-    deletedlist->deleted[deletedlist->size-1] = *indexdeletedbook;
-    deletedlist->used ++;
-    return 0;
+    deletedlist->deleted[deletedlist->used] = *indexdeletedbook;
+    deletedlist->used++;
 
-    if (dlist->used == dlist->size){
-        int new_size = dlist->size * 2;
-        IndexDeletedBook *temp = realloc(dlist->deleted,
-                                         new_size * sizeof(IndexDeletedBook));
-        if (!temp) return -1;
-
-        dlist->deleted = temp;
-        dlist->size = new_size;
-    }
-
-    // insertar al final
-    dlist->deleted[dlist->used] = *elem;
-    dlist->used++;
 
     return 0;
 }
-}
+
 
 int deletedlist_update(DeletedList *deletedlist){
     if (deletedlist == NULL){
