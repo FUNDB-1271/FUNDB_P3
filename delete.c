@@ -82,14 +82,96 @@ int deletedlist_add(DeletedList *deletedlist, IndexDeletedBook *indexdeletedbook
     return 0;
 }
 
+int deletedlist_del(DeletedList *deletedlist, int pos){
+    int i;
 
-int deletedlist_update(DeletedList *deletedlist){
-    if (deletedlist == NULL){
+    if (deletedlist == NULL || pos > deletedlist->used || pos < 0){
         return -1;
     }
 
+    
+    for (i = pos; i < deletedlist->used-1; i++){
+        deletedlist->deleted[i] = deletedlist->deleted[i+1];
+    }
 
+    deletedlist->used--;
 
+    return 0;
 }
+
+
+int deletedlist_update(DeletedList *deletedlist, size_t book_size, method_func method){
+    if (deletedlist == NULL || method == NULL || book_size == 0){
+        return -1;
+    }
+
+    int pos = method(deletedlist, book_size);
+    if (pos == -1){
+        return -1;
+    }
+
+    if (deletedlist->deleted[pos].register_size == book_size){
+        if (deletedlist_del(deletedlist, pos) == -1){
+            return -1;
+        }
+    }
+    else if (deletedlist->deleted[pos].register_size > book_size){
+        deletedlist->deleted[pos].register_size -= book_size;
+    }
+    else{
+        return -1;
+    }
+
+    return 0;
+}
+
+int deletedlist_findbestfit(DeletedList *deletedlist, size_t book_size){
+    int i;
+
+    if (deletedlist == NULL || deletedlist->deleted == NULL){
+        return -1;
+    }
+
+    for (i = 0; i < deletedlist->used; i++){
+        if (deletedlist->deleted[i].register_size >= book_size){
+            return i;
+        }
+    }
+
+    return -1;
+}
+
+int deletedlist_findworstfit(DeletedList *deletedlist, size_t book_size){
+    int i;
+
+    if (deletedlist == NULL || deletedlist->deleted == NULL){
+        return -1;
+    }
+
+    for (i = deletedlist->used-1; i >= 0 ; i--){
+        if (deletedlist->deleted[i].register_size >= book_size){
+            return i;
+        }
+    }
+
+    return -1;
+}
+
+int deletedlist_findfirstfit(DeletedList *deletedlist, size_t book_size){
+    int i;
+
+    if (deletedlist == NULL || deletedlist->deleted == NULL){
+        return -1;
+    }
+
+    for (i = 0; i < deletedlist->used; i++){
+        if (deletedlist->deleted[i].register_size >= book_size){
+            return i;
+        }
+    }
+
+    return -1;
+}   
+
 
 
