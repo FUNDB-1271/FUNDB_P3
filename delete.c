@@ -52,7 +52,7 @@ int deletedlist_add(DeletedList *deletedlist, IndexDeletedBook *indexdeletedbook
     if (deletedlist->size == deletedlist->used){
         deletedlist->size *= 2;
         if (deletedlist->size == 0){
-            deletedlist->size = 1;
+            deletedlist->size = 10;
         }
         deletedlist->deleted = realloc(deletedlist->deleted, deletedlist->size * sizeof(IndexDeletedBook));
         if (deletedlist->deleted == NULL){
@@ -64,6 +64,7 @@ int deletedlist_add(DeletedList *deletedlist, IndexDeletedBook *indexdeletedbook
     }
 
     /*Insertamos en la posición correcta el indexdeletedbook*/
+    /*
     for (i = 0; i < deletedlist->used; i++) {
     if (indexdeletedbook->register_size < deletedlist->deleted[i].register_size) {
         for (j = deletedlist->used; j > i; j--) {
@@ -73,7 +74,7 @@ int deletedlist_add(DeletedList *deletedlist, IndexDeletedBook *indexdeletedbook
         deletedlist->used++;
         return 0;
     }
-    }
+    }*/
 
     deletedlist->deleted[deletedlist->used] = *indexdeletedbook;
     deletedlist->used++;
@@ -126,7 +127,8 @@ int deletedlist_update(DeletedList *deletedlist, size_t book_size, method_func m
 }
 
 int deletedlist_findbestfit(DeletedList *deletedlist, size_t book_size){
-    int i;
+    int i, pos = -1;
+    size_t min = 0;
 
     if (deletedlist == NULL || deletedlist->deleted == NULL){
         return -1;
@@ -134,27 +136,34 @@ int deletedlist_findbestfit(DeletedList *deletedlist, size_t book_size){
 
     for (i = 0; i < deletedlist->used; i++){
         if (deletedlist->deleted[i].register_size >= book_size){
-            return i;
+            if (min > deletedlist->deleted[i].register_size || min == 0){
+                pos = i;
+                min = deletedlist->deleted[i].register_size;
+            }
         }
     }
 
-    return -1;
+    return pos;
 }
 
 int deletedlist_findworstfit(DeletedList *deletedlist, size_t book_size){
-    int i;
+    int i, pos = -1;
+    size_t max = 0;
 
     if (deletedlist == NULL || deletedlist->deleted == NULL){
         return -1;
     }
 
-    for (i = deletedlist->used-1; i >= 0 ; i--){
+    for (i = 0; i < deletedlist->used; i++){
         if (deletedlist->deleted[i].register_size >= book_size){
-            return i;
+            if (max < deletedlist->deleted[i].register_size || max == 0){
+                pos = i;
+                max = deletedlist->deleted[i].register_size;
+            }
         }
     }
 
-    return -1;
+    return pos;
 }
 
 int deletedlist_findfirstfit(DeletedList *deletedlist, size_t book_size){
