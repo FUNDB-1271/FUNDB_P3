@@ -4,18 +4,18 @@
 #include "delete.h"
 #include "index.h"
 
-int db_add();
+int database_add();
 
-int db_find(/* ... */);
+int database_find(/* ... */);
 
-int db_del(/* ... */);
+int database_del(/* ... */);
 
-int db_exit(/* ... */);
+int database_exit(/* ... */);
 
-int db_print_ind(/* ... */);
+int database_print_ind(/* ... */);
 
-int db_print_lst(/* ... */);
+int database_print_lst(/* ... */);
 
-int db_print_rec(/* ... */);
+int database_print_rec(/* ... */);
 
 #endif

@@ -1,13 +1,11 @@
 #include "commands.h"
-#include "delete.h"
-
-char *cmd_to_str[N_CMD + 1] = {"No command", "Unknown", "add", "find", "del", "exit", "printRec", "printInd", "printLst"};
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
 
+char *cmd_to_str[N_CMD + 1] = {"No command", "Unknown", "add", "find", "del", "exit", "printRec", "printInd", "printLst"};
 /**
  * @brief private function for fetching command code
  * 
@@ -18,13 +16,14 @@ char *cmd_to_str[N_CMD + 1] = {"No command", "Unknown", "add", "find", "del", "e
 */
 CommandCode command_code_from_string(const char *str)
 {
-    if (strcasecmp(str, "add") == 0)   return ADD;
-    if (strcasecmp(str, "find") == 0)  return FIND;
-    if (strcasecmp(str, "del") == 0)   return DEL;
-    if (strcasecmp(str, "exit") == 0)  return EXIT;
-    if (strcasecmp(str, "print_rec") == 0) return PRINT_REC;
-    if (strcasecmp(str, "print_ind") == 0) return PRINT_IND;
-    if (strcasecmp(str, "print_lst") == 0) return PRINT_LST;
+    for (int i = 0; i <= N_CMD; i++) {
+        if (cmd_to_str[i] == NULL)
+            continue;
+
+        if (strcasecmp(str, cmd_to_str[i]) == 0) {
+            return (CommandCode)i;   // index matches enum value
+        }
+    }
 
     return UNKNOWN;
 }

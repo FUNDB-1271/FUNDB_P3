@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-int db_add(FILE *fdb, Index *ind, DeletedList *deletedList, IndexBook *book, int strategy){
+int database_add(FILE *fdb, Index *ind, DeletedList *deletedList, IndexBook *book, int strategy){
     int status, pos;
     size_t offset;
 
@@ -58,7 +58,7 @@ int db_add(FILE *fdb, Index *ind, DeletedList *deletedList, IndexBook *book, int
     return 0;
 }
 
-int db_find(FILE *fdb, Index *ind, int key){
+int database_find(FILE *fdb, Index *ind, int key){
     int pos;
     IndexBook *book = NULL;
 
@@ -88,7 +88,7 @@ int db_find(FILE *fdb, Index *ind, int key){
     return OK;
 }
 
-void db_del(Index *ind, DeletedList *deletedList, IndexBook *book, int strategy){
+void database_del(Index *ind, DeletedList *deletedList, IndexBook *book, int strategy){
 
     /*Falta código para eliminar la informacion de la propia bd*/
     
@@ -104,20 +104,20 @@ void db_del(Index *ind, DeletedList *deletedList, IndexBook *book, int strategy)
     return 0;
 }
 
-int db_exit(){
+int database_exit(){
     return EXIT;
 }
 
-void db_print_ind(){
+void database_print_ind(){
     index_print()
 
 }
 
-void db_print_lst(/* ... */){
+void database_print_lst(/* ... */){
 
 }
 
-void db_print_rec(/* ... */){
+void database_print_rec(/* ... */){
 
 }
 

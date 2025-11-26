@@ -5,6 +5,8 @@
 
 #include "types.h"
 #include "index.h"
+#include "delete.h"
+#include "database.h"
 
 #include <stdio.h>
 
