@@ -60,8 +60,34 @@ int db_add(FILE *fdb, Index *ind, DeletedList *deletedList, IndexBook *book, int
     return 0;
 }
 
-void db_find(/* ... */){
+int db_find(FILE *fdb, Index *ind, int key){
+    int pos;
+    IndexBook *book = NULL;
 
+    if (fdb == NULL || ind == NULL || key < 0){
+        return ERR;
+    }
+
+    pos = index_find(ind, key);
+    if (pos == ERR){
+        return ERR;
+    }
+    else if (pos == NOT_FOUND){
+        printf("Record with bookId=%d does not exist\n", key);
+        return NOT_FOUND;
+    }
+
+    if (fseek(fdb, , SEEK_SET) != 0){
+        return ERR;
+    }
+
+    if (book_read(fdb, book_get_offset(),) == ERR){
+        return ERR;
+    }
+
+    /*Hacer el print*/
+    
+    return OK;
 }
 
 void db_del(Index *ind, DeletedList *deletedList, IndexBook *book, int strategy){

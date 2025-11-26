@@ -24,6 +24,8 @@ int book_get_key(IndexBook *book);
 
 int book_set_offset(IndexBook *book, size_t offset);
 
+long int book_get_offset(IndexBook *book);
+
 Index *index_init(void);
 
 void index_free(Index *ind);
@@ -37,5 +39,7 @@ Index *index_init_from_file(FILE *index_fp);
 void index_print(Index *ind);
 
 int index_del(Index *ind, int key);
+
+int index_find(Index *ind, int key);
 
 #endif

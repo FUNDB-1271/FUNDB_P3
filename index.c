@@ -53,6 +53,14 @@ int book_set_offset(IndexBook *book, size_t offset){
     return OK;
 }
 
+long int book_get_offset(IndexBook *book){
+    if (book == NULL){
+        return ERR;
+    }
+
+    return book->offset;
+}
+
 Index *index_init(void) {
     Index *ind = malloc(sizeof(Index));
     if (ind) {
@@ -217,10 +225,35 @@ void index_print(Index *ind) {
 }
 
 int index_del(Index *ind, int key) {
-    int a, b, m;
+    int m;
     int flag = 0;
 
     if (!ind || !ind->books || ind->used == 0) return -1;
+
+    m = index_find(ind, key);
+    if (m == ERR){
+        return ERR;
+    }
+    else if(m != NO_POS){
+        book_free(ind->books[m]);
+        if (m < (int) ind->used - 1) {
+            memmove(&(ind->books[m]), &(ind->books[m+1]), (ind->used - m - 1) * sizeof(IndexBook *));
+            ind->used--;
+            ind->books[ind->used] = NULL;
+        }
+        return OK;
+    }
+    else{
+        return NOT_FOUND;
+    }
+}
+
+int index_find(Index *ind, int key){
+    int a, b, m, flag = 0;
+
+    if (ind == NULL || key < 0){
+        return ERR;
+    }
 
     a = 0;
     b = ind->used - 1;
@@ -231,24 +264,13 @@ int index_del(Index *ind, int key) {
 
         if (key == ind->books[m]->key) {
             flag = 1;
-            break;
+            return m;
         } else if (key < ind->books[m]->key) {
             b = m - 1;
         } else {
             a = m + 1;
         } 
-    } 
-
-    if (flag) 
-    {
-        book_free(ind->books[m]);
-        if (m < (int) ind->used - 1) {
-            memmove(&(ind->books[m]), &(ind->books[m+1]), (ind->used - m - 1) * sizeof(IndexBook *));
-            ind->used--;
-            ind->books[ind->used] = NULL;
-        }
-        return 0;
     }
-
-    return -1;
+    
+    return NOT_FOUND;
 }
