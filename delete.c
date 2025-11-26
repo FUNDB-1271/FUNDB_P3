@@ -63,22 +63,8 @@ int deletedlist_add(DeletedList *deletedlist, IndexDeletedBook *indexdeletedbook
         return -1;
     }
 
-    /*Insertamos en la posición correcta el indexdeletedbook*/
-    /*
-    for (i = 0; i < deletedlist->used; i++) {
-    if (indexdeletedbook->register_size < deletedlist->deleted[i].register_size) {
-        for (j = deletedlist->used; j > i; j--) {
-            deletedlist->deleted[j] = deletedlist->deleted[j-1];
-        }
-        deletedlist->deleted[i] = *indexdeletedbook;
-        deletedlist->used++;
-        return 0;
-    }
-    }*/
-
     deletedlist->deleted[deletedlist->used] = *indexdeletedbook;
     deletedlist->used++;
-
 
     return 0;
 }
@@ -101,15 +87,35 @@ int deletedlist_del(DeletedList *deletedlist, int pos){
 }
 
 
-int deletedlist_update(DeletedList *deletedlist, size_t book_size, method_func method){
-    if (deletedlist == NULL || method == NULL || book_size == 0){
+int deletedlist_update(DeletedList *deletedlist, size_t book_size, int strategy){
+    if (deletedlist == NULL || book_size == 0){
         return -1;
     }
 
-    int pos = method(deletedlist, book_size);
-    if (pos == -1){
+    int pos;
+
+    if (strategy == BESTFIT){
+        pos = deletedlist_findbestfit(deletedlist, book_size);
+        if (pos == -1){
+            return -1;
+        }
+    }
+    else if(strategy == WORSTFIT){
+        pos = deletedlist_findworstfit(deletedlist, book_size);
+        if (pos == -1){
+            return -1;
+        }
+    }
+    else if (strategy == FIRSTFIT){
+        pos = deletedlist_findfirstfit(deletedlist, book_size);
+        if (pos == -1){
+            return -1;
+        }
+    }
+    else{
         return -1;
     }
+    
 
     if (deletedlist->deleted[pos].register_size == book_size){
         if (deletedlist_del(deletedlist, pos) == -1){
@@ -182,5 +188,29 @@ int deletedlist_findfirstfit(DeletedList *deletedlist, size_t book_size){
     return -1;
 }   
 
+int deletedlist_find(DeletedList *deletedlist, size_t book_size, int strategy){
+    if (deletedlist == NULL || (strategy != FIRSTFIT && strategy != WORSTFIT && strategy != BESTFIT)){
+        return -1;
+    }
+
+    if (strategy == BESTFIT){
+        return deletedlist_findbestfit(deletedlist, book_size);
+    }
+    else if (strategy == WORSTFIT){
+        return deletedlist_findworstfit(deletedlist, book_size);
+    }
+    else if (strategy == FIRSTFIT){ 
+        return deletedlist_findfirstfit(deletedlist, book_size);
+    }
+}
 
 
+void deletedlist_print(DeletedList *deletedList) {
+    int i;
+    if (deletedList == NULL || deletedList->deleted == NULL) return;
+    for (i = 0 ; i < deletedList->used ; i++) {
+        fprintf(stdout, "Entry #%ld\n", i);
+        fprintf(stdout, "\toffset: #%d\n", deletedList->deleted[i].offset);
+        fprintf(stdout, "\tsize: #%ld\n", deletedList->deleted[i].register_size);        
+    }   
+}

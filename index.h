@@ -16,6 +16,10 @@ IndexBook *book_init(int key, long int offset, size_t size);
 
 void book_free(IndexBook *book);
 
+size_t book_get_size(IndexBook *book);
+
+int book_get_key(IndexBook *book);
+
 Index *index_init(void);
 
 void index_free(Index *ind);

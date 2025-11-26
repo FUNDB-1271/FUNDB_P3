@@ -33,6 +33,18 @@ void book_free(IndexBook *book) {
     if (book) free(book);
 }
 
+size_t book_get_size(IndexBook *book){
+    if (book == NULL){
+        return 0;
+    }
+
+    return book->size;
+}
+
+int book_get_key(IndexBook *book){
+    return book->key;
+}
+
 Index *index_init(void) {
     Index *ind = malloc(sizeof(Index));
     if (ind) {
@@ -82,7 +94,7 @@ int index_add(Index *ind, IndexBook *book) {
         m = a + (b - a) / 2; /* minimize overflow */
 
         if (book->key == ind->books[m]->key) {
-            return 0;
+            return 1;
         } else if (book->key < ind->books[m]->key) {
             b = m - 1;
         } else {

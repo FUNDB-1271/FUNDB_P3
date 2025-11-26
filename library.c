@@ -10,6 +10,8 @@
 #define ERR -1
 #define OK !(ERR)
 
+#define EXIT -2
+
 #define BEST_FIT "best_fit"
 #define WORST_FIT "worst_fit"
 #define FIRST_FIT "first_fit"
