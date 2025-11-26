@@ -3,6 +3,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#define NO_POS -2
+
 struct _indexdeletedbook {
     size_t register_size;
     size_t offset;
@@ -39,6 +41,14 @@ void deletedlist_free(DeletedList *deletedlist){
         }
         free(deletedlist);
     }
+}
+
+size_t deletedlist_get_offset(DeletedList *deletedlist, int pos){
+    if (deletedlist == NULL){
+        return 0;
+    }    
+
+    return deletedlist->deleted[pos].offset;
 }
 
 int deletedlist_add(DeletedList *deletedlist, IndexDeletedBook *indexdeletedbook){
@@ -133,7 +143,7 @@ int deletedlist_update(DeletedList *deletedlist, size_t book_size, int strategy)
 }
 
 int deletedlist_findbestfit(DeletedList *deletedlist, size_t book_size){
-    int i, pos = -1;
+    int i, pos = NO_POS;
     size_t min = 0;
 
     if (deletedlist == NULL || deletedlist->deleted == NULL){
@@ -153,7 +163,7 @@ int deletedlist_findbestfit(DeletedList *deletedlist, size_t book_size){
 }
 
 int deletedlist_findworstfit(DeletedList *deletedlist, size_t book_size){
-    int i, pos = -1;
+    int i, pos = NO_POS;
     size_t max = 0;
 
     if (deletedlist == NULL || deletedlist->deleted == NULL){
@@ -185,7 +195,7 @@ int deletedlist_findfirstfit(DeletedList *deletedlist, size_t book_size){
         }
     }
 
-    return -1;
+    return NO_POS;
 }   
 
 int deletedlist_find(DeletedList *deletedlist, size_t book_size, int strategy){

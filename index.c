@@ -45,6 +45,14 @@ int book_get_key(IndexBook *book){
     return book->key;
 }
 
+int book_set_offset(IndexBook *book, size_t offset){
+    if (book == NULL || offset == 0){
+        return ERR;
+    }
+
+    return OK;
+}
+
 Index *index_init(void) {
     Index *ind = malloc(sizeof(Index));
     if (ind) {

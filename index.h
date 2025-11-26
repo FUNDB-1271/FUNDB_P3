@@ -3,6 +3,8 @@
 
 #include <stdio.h>
 
+#include "types.h"
+
 #define INDEX_INIT_SIZE 4
 #define BESTFIT 0
 #define WORSTFIT 1
@@ -19,6 +21,8 @@ void book_free(IndexBook *book);
 size_t book_get_size(IndexBook *book);
 
 int book_get_key(IndexBook *book);
+
+int book_set_offset(IndexBook *book, size_t offset);
 
 Index *index_init(void);
 
