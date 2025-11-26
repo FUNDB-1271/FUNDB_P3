@@ -14,17 +14,17 @@ typedef struct _indexbook IndexBook;
 
 typedef struct _index Index;
 
-IndexBook *book_init(int key, long int offset, size_t size);
+IndexBook *indexbook_init(int key, long int offset, size_t size);
 
-void book_free(IndexBook *book);
+void indexbook_free(IndexBook *book);
 
-size_t book_get_size(IndexBook *book);
+size_t indexbook_get_size(IndexBook *book);
 
-int book_get_key(IndexBook *book);
+int indexbook_get_key(IndexBook *book);
 
-int book_set_offset(IndexBook *book, size_t offset);
+int indexbook_set_offset(IndexBook *book, size_t offset);
 
-long int book_get_offset(IndexBook *book);
+long int indexbook_get_offset(IndexBook *book);
 
 Index *index_init(void);
 

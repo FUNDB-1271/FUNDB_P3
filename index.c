@@ -18,7 +18,7 @@ struct _index {
 
 
 
-IndexBook *book_init(int key, long int offset, size_t size) {
+IndexBook *indexbook_init(int key, long int offset, size_t size) {
     IndexBook *book = (IndexBook *) malloc(sizeof(IndexBook));
     if (book) {
         book->key = key;
@@ -29,11 +29,11 @@ IndexBook *book_init(int key, long int offset, size_t size) {
 }
 
 
-void book_free(IndexBook *book) {
+void indexbook_free(IndexBook *book) {
     if (book) free(book);
 }
 
-size_t book_get_size(IndexBook *book){
+size_t indexbook_get_size(IndexBook *book){
     if (book == NULL){
         return 0;
     }
@@ -41,11 +41,11 @@ size_t book_get_size(IndexBook *book){
     return book->size;
 }
 
-int book_get_key(IndexBook *book){
+int indexbook_get_key(IndexBook *book){
     return book->key;
 }
 
-int book_set_offset(IndexBook *book, size_t offset){
+int indexbook_set_offset(IndexBook *book, size_t offset){
     if (book == NULL || offset == 0){
         return ERR;
     }
@@ -53,7 +53,7 @@ int book_set_offset(IndexBook *book, size_t offset){
     return OK;
 }
 
-long int book_get_offset(IndexBook *book){
+long int indexbook_get_offset(IndexBook *book){
     if (book == NULL){
         return ERR;
     }
@@ -81,7 +81,7 @@ void index_free(Index *ind) {
     if (ind) 
     {
         if (ind->books) {
-            for (i = 0 ; i < ind->used ; i++) if (ind->books[i]) book_free(ind->books[i]);
+            for (i = 0 ; i < ind->used ; i++) if (ind->books[i]) indexbook_free(ind->books[i]);
             free(ind->books);
         }
         ind->books = NULL;
@@ -192,7 +192,7 @@ Index *index_init_from_file(FILE *index_fp) {
         if (fread(&size, sizeof(size), 1, index_fp) != 1) goto cleanup;
 
         /* inicializacion de book struct */
-        book = book_init(key, offset, size);
+        book = indexbook_init(key, offset, size);
         if (!book) goto cleanup;
 
         /* almacenamiento en index struct */
@@ -207,7 +207,7 @@ Index *index_init_from_file(FILE *index_fp) {
 cleanup: 
     {
         if (index_fp) fclose(index_fp);
-        if (book) book_free(book);
+        if (book) indexbook_free(book);
         if (index) index_free(index);
     }
     return NULL;
@@ -235,7 +235,7 @@ int index_del(Index *ind, int key) {
         return ERR;
     }
     else if(m != NO_POS){
-        book_free(ind->books[m]);
+        indexbook_free(ind->books[m]);
         if (m < (int) ind->used - 1) {
             memmove(&(ind->books[m]), &(ind->books[m+1]), (ind->used - m - 1) * sizeof(IndexBook *));
             ind->used--;
