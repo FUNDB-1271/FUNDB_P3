@@ -1,3 +1,4 @@
+#include "types.h"
 #include "commands.h"
 #include "index.h"
 
@@ -26,7 +27,11 @@ typedef struct {
     Index *index;
     int strategy;
     char dbname[NAME_MAX];
-    } DBInfo;
+    CommandCode cmd;
+} DBInfo;
+
+
+Bool dbinfo_error(DBInfo *db);
 
 int _library_init(char *dbname, char *strategy, DBInfo *database);
 
@@ -65,7 +70,7 @@ int main(int argc, char *argv[]) {
         return ERR;
     }
 
-    loop(/* ... */);
+    loop(database);
 
     _library_cleanup(&database);
 
@@ -143,8 +148,19 @@ int _library_init(char *dbname, char *strategy, DBInfo *database){
     return OK;
 }
 
-void loop() {
+void loop(DBInfo *database) 
+{
+    char user_input[MAX_INPUT];
+    Command current_command;
 
+    if (dbinfo_error(database)) return; 
+
+    while (fgets(user_input, MAX_INPUT, stdin) && database->cmd != EXIT)
+    {
+        command_parse(user_input, &current_command);
+        
+        command_execute(database->data_fp, database->index,/*database->del_list, */ database->strategy, current_command);
+    }
 }
 
 void _library_cleanup(DBInfo **database) {
@@ -179,4 +195,19 @@ void _library_cleanup(DBInfo **database) {
         free(*database);
         *database = NULL;
     }
+}
+
+Bool dbinfo_error(DBInfo *db)
+{
+    if (!db) return true;
+    if (!db->data_fp) return true;
+    if (!db->deleted_fp) return true;
+    if (!db->index_fp) return true;
+    if (!db->index) return true;
+/*
+    if (!db->del_list) return true;
+*/
+    if (db->strategy != BESTFIT && db->strategy != WORSTFIT && db->strategy != FIRSTFIT) return true;
+
+    return false;
 }
