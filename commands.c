@@ -1,127 +1,86 @@
 #include "commands.h"
 #include "delete.h"
 
+char *cmd_to_str[N_CMD + 1] = {"No command", "Unknown", "add", "find", "del", "exit", "printRec", "printInd", "printLst"};
+
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
 
-char *cmd_to_str[N_CMD] = {"No command", "Unknown", "add", "find", "del", "exit", "printRec", "printInd", "printLst"};
+/**
+ * @brief private function for fetching command code
+ * 
+ * @author Guilherme 
+ * @date 26-11-2025
+ * @param str user input in cli that is being parsed
+ * @return corresponding code or unknown
+*/
+CommandCode command_code_from_string(const char *str)
+{
+    if (strcasecmp(str, "add") == 0)   return ADD;
+    if (strcasecmp(str, "find") == 0)  return FIND;
+    if (strcasecmp(str, "del") == 0)   return DEL;
+    if (strcasecmp(str, "exit") == 0)  return EXIT;
+    if (strcasecmp(str, "print_rec") == 0) return PRINT_REC;
+    if (strcasecmp(str, "print_ind") == 0) return PRINT_IND;
+    if (strcasecmp(str, "print_lst") == 0) return PRINT_LST;
 
-int db_add(FILE *fdb, Index *ind, DeletedList *deletedList, IndexBook *book, int strategy){
-    int status, pos;
-    size_t offset;
-
-    if (ind == NULL || book == NULL || (strategy != BESTFIT && strategy != WORSTFIT && strategy != FIRSTFIT)){
-        return ERR;
-    }
-    
-    pos = deletedlist_find(deletedList,book_get_size(book), strategy);
-    if (pos == ERR){
-        return ERR;
-    }
-    else if (pos == NO_POS){
-        fseek(fdb, 0, SEEK_END);
-        offset = ftell(fdb);
-    }
-    else{
-        offset = deletedlist_get_offset(deletedList, pos);
-        if (offset == 0){
-            return ERR;
-        }
-    }
-
-    if (book_set_offset(book, offset) == ERR){
-        return ERR;
-    }
-
-    fseek(fdb, offset, SEEK_SET);
-    if (book_write(fdb, book) == ERR){
-        return ERR;
-    }
-    
-    status = index_add(ind, book);
-    if (status == ERR){
-        return ERR;
-    }
-    else if (status == 1){
-        printf ("Record with BookID=%ld exists", book_get_key(book));
-        return ERR;
-    }
-
-    /*Falta meter la funcion que agrega un libro a la base de datos */
-
-    if (pos != ERR){
-        if (deletedlist_update(deletedList, book_get_size(book), strategy) == ERR){
-            return ERR;
-        }
-    }
-
-    printf("Record with BookID=%ld has been added to the database\n",
-            book_get_key(book));
-
-    return 0;
+    return UNKNOWN;
 }
 
-int db_find(FILE *fdb, Index *ind, int key){
-    int pos;
-    IndexBook *book = NULL;
+void command_parse(const char *input, Command *cmd)
+{
+    char buffer[MAX_INPUT];
+    strncpy(buffer, input, MAX_INPUT);
+    buffer[MAX_INPUT - 1] = '\0';
 
-    if (fdb == NULL || ind == NULL || key < 0){
-        return ERR;
+    cmd->cmdcode = NO_CMD;
+    cmd->book_id = 0;
+    cmd->isbn[0] = '\0';
+    cmd->title[0] = '\0';
+    cmd->publishedby[0] = '\0';
+
+    char *token = strtok(buffer, " \t\n");
+    if (!token) {
+        cmd->cmdcode = UNKNOWN;
+        return;
     }
 
-    pos = index_find(ind, key);
-    if (pos == ERR){
-        return ERR;
-    }
-    else if (pos == NOT_FOUND){
-        printf("Record with bookId=%d does not exist\n", key);
-        return NOT_FOUND;
-    }
+    cmd->cmdcode = command_code_from_string(token);
 
-    if (fseek(fdb, , SEEK_SET) != 0){
-        return ERR;
-    }
+    if (cmd->cmdcode == EXIT || cmd->cmdcode == UNKNOWN)
+        return;
 
-    if (book_read(fdb, book_get_offset(),) == ERR){
-        return ERR;
-    }
+    char *rest = strtok(NULL, "\n");  
+    if (!rest) return;
 
-    /*Hacer el print*/
-    
-    return OK;
+    char *bookid_str   = strtok(rest, "|");
+    char *isbn_str     = strtok(NULL, "|");
+    char *title_str    = strtok(NULL, "|");
+    char *pubby_str    = strtok(NULL, "|");
+
+    if (bookid_str)   cmd->book_id = atoi(bookid_str);
+
+    if (isbn_str)
+        strncpy(cmd->isbn, isbn_str, MAX_ISBN - 1),
+        cmd->isbn[MAX_ISBN - 1] = '\0';
+
+    if (title_str)
+        strncpy(cmd->title, title_str, MAX_TITLE - 1),
+        cmd->title[MAX_TITLE - 1] = '\0';
+
+    if (pubby_str)
+        strncpy(cmd->publishedby, pubby_str, MAX_PUBLISHEDBY - 1),
+        cmd->publishedby[MAX_PUBLISHEDBY - 1] = '\0';
 }
 
-void db_del(Index *ind, DeletedList *deletedList, IndexBook *book, int strategy){
+int command_execute(FILE *datafile, Index *index, /*DeletedList *lst,*/ int strategy, Command command){
 
-    /*Falta código para eliminar la informacion de la propia bd*/
-    
-    
-    if (index_del(ind, book) == ERR){
-        return ERR;
+    switch(command.cmdcode)
+    {
+        case ADD:
+            db_add();
     }
 
-    if (deletedlist_update(deletedList, book_get_size(book), strategy) == ERR){
-        return ERR;
-    }
-
-    return 0;
 }
-
-int db_exit(){
-    return EXIT;
-}
-
-void db_print_ind(){
-    index_print()
-
-}
-
-void db_print_lst(/* ... */){
-
-}
-
-void db_print_rec(/* ... */){
-
-}
-
-
-
