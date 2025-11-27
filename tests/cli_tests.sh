@@ -1,4 +1,4 @@
-#!/opt/homebrew/bin/expect -f
+#!/usr/bin/expect -f
 # 01
 # check command line error handling
 # NOTE: this test will fail if the program "library"

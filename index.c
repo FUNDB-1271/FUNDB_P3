@@ -222,7 +222,6 @@ void index_print(Index *ind) {
         fprintf(stdout, "Entry #%ld\n", i);
         fprintf(stdout, "\tkey: #%d\n", ind->books[i]->key);
         fprintf(stdout, "\toffset: #%ld\n", ind->books[i]->offset);
-        fprintf(stdout, "\tsize: #%ld\n", ind->books[i]->size);        
     }   
 }
 

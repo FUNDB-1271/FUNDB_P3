@@ -128,7 +128,7 @@ int command_add(FILE *data_fp, Index *index, /*DeletedList *lst,*/ int strategy,
     offset = deletedlist_find(lst, command.total_size, strategy);
 */
     offset = database_add(data_fp, offset, command.book_id, command.title, command.isbn, command.publishedby);
-    if (ret == ERR) return WriteError;
+    if (offset == NO_POS) return WriteError;
 
     indexbook_set_offset(indexbook, offset);
 
@@ -179,23 +179,23 @@ void command_add_interpret_exit(Command cmd, int exit_code) {
         switch(exit_code)
         {
             case NoError:
-                fprintf(stdout, "Record with BookID=%d has been added to the database", cmd.book_id);
+                fprintf(stdout, "Record with BookID=%d has been added to the database\n", cmd.book_id);
                 fflush(stdout);
                 break;
             case BookExists: 
-                fprintf(stdout, "Record with BookID=%d already exists", cmd.book_id);
+                fprintf(stdout, "Record with BookID=%d already exists\n", cmd.book_id);
                 fflush(stdout);
                 break;
             case WriteError:
-                fprintf(stdout, "Error writing to file");
+                fprintf(stdout, "Error writing to file\n");
                 fflush(stdout);
                 break;
             case MemError: 
-                fprintf(stdout, "Memory failure");
+                fprintf(stdout, "Memory failure\n");
                 fflush(stdout);
                 break;
             default: 
-                fprintf(stdout, "Unknown error");
+                fprintf(stdout, "Unknown error\n");
                 fflush(stdout);
                 break;
         }

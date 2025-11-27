@@ -145,21 +145,60 @@ int _library_init(char *dbname, char *strategy, DBInfo *database){
 void loop(DBInfo *database) 
 {
     char user_input[MAX_INPUT];
-    Command current_command;
+    Command current_command = {0};
 
     if (dbinfo_error(database)) return; 
 
-    while (fgets(user_input, MAX_INPUT, stdin))
-    {
-        command_parse(user_input, &current_command);
+    fprintf(stdout, "Type command and argument/s.\n");
+    fprintf(stdout, "exit\n");
+    fflush(stdout);
 
-        if (current_command.cmdcode == EXIT)
-        {
-            command_execute(database->data_fp, database->index, database->index_fp, /*database->del_list, database->deleted_fp*/ database->strategy, current_command, database->dbname);
+    while (1) {
+        /* read from stdin accepting either '\n' or '\r' as EOL */
+        int i = 0;
+        int c = 0;
+
+        /* initialize buffer */
+        user_input[0] = '\0';
+
+        /* read char-by-char */
+        while ((c = fgetc(stdin)) != EOF) {
+            if (c == '\n' || c == '\r') {
+                /* terminate the line */
+                user_input[i] = '\0';
+                break;
+            }
+            if (i < MAX_INPUT - 1) {
+                user_input[i++] = (char)c;
+            }
+        }
+
+        if (c == EOF && i == 0) {
+            /* EOF and nothing read -> exit loop */
             break;
         }
 
-        command_execute(database->data_fp, database->index, database->index_fp, /*database->del_list, database->deleted_fp*/ database->strategy, current_command, database->dbname);
+        /* if we reached EOF but collected data, terminate */
+        if (i >= MAX_INPUT - 1) user_input[MAX_INPUT - 1] = '\0';
+
+        /* If nothing but an empty line, continue waiting for input */
+        if (strlen(user_input) == 0) continue;
+
+        command_parse(user_input, &current_command);
+
+        command_execute(database->data_fp, database->index, database->index_fp,
+                        database->strategy, current_command, database->dbname);
+
+        /* PRINT EXIT ONLY IF NOT LAST COMMAND */
+        if (current_command.cmdcode != EXIT) {
+            fprintf(stdout, "exit\n");
+            fflush(stdout);
+        } else {
+            fflush(stdout);
+            fclose(stdin);
+            break;   // exit command ends the loop
+        }
+
     }
 }
 
