@@ -220,8 +220,8 @@ void index_print(Index *ind) {
     if (!ind || !ind->books) return;
     for (i = 0 ; i < ind->used ; i++) {
         fprintf(stdout, "Entry #%ld\n", i);
-        fprintf(stdout, "\tkey: #%d\n", ind->books[i]->key);
-        fprintf(stdout, "\toffset: #%ld\n", ind->books[i]->offset);
+        fprintf(stdout, "    key: #%d\n", ind->books[i]->key);
+        fprintf(stdout, "    offset: #%ld\n", ind->books[i]->offset);
     }   
 }
 

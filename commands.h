@@ -11,7 +11,7 @@
 #include <stdio.h>
 
 
-typedef enum { NO_CMD = 0, UNKNOWN, ADD, FIND, DEL, EXIT = 5, PRINT_REC, PRINT_IND, PRINT_LST } CommandCode;
+typedef enum { NO_CMD = 0, UNKNOWN, ADD, FIND, DEL, EXIT, PRINT_REC, PRINT_IND, PRINT_LST } CommandCode;
 
 typedef struct {
     CommandCode cmdcode;
