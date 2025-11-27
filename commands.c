@@ -62,8 +62,8 @@ void command_parse(const char *input, Command *cmd)
     if (bookid_str)   cmd->book_id = atoi(bookid_str);
 
     if (isbn_str)
-        strncpy(cmd->isbn, isbn_str, MAX_ISBN - 1),
-        cmd->isbn[MAX_ISBN - 1] = '\0';
+        strncpy(cmd->isbn, isbn_str, MAX_ISBN),
+        cmd->isbn[MAX_ISBN] = '\0';
 
     if (title_str)
         strncpy(cmd->title, title_str, MAX_TITLE - 1),

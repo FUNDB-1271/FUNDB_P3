@@ -9,7 +9,8 @@ int database_add(FILE *database_f, int offset, int book_id, char *title, char *i
     char isbn_cpy[MAX_ISBN], a = '|';
     long chosen_pos, pos, file_size;
     int need_restore = 0;
-    
+    size_t copy_length = 0;
+
     size_t aux_length = 0;
     char aux[MAX_INPUT];
 
@@ -47,9 +48,13 @@ int database_add(FILE *database_f, int offset, int book_id, char *title, char *i
     total_length = sizeof(int) + MAX_ISBN + title_length + 1 + publisher_length; 
 
     /** truncate isbn or pad it with zeros in case it is shorter than MAX_ISBN */
-    memset(isbn_cpy, 0, MAX_ISBN);
-    strncpy(isbn_cpy, isbn, MAX_ISBN - 1);
-    isbn_cpy[MAX_ISBN - 1] = '\0';
+    copy_length = strlen(isbn);    
+    if (copy_length > MAX_ISBN) copy_length = MAX_ISBN;
+
+    /* fill with spaces or zeros to pad to MAX_ISBN */
+    memset(isbn_cpy, '\0', MAX_ISBN);
+    memcpy(isbn_cpy, isbn, copy_length);
+
 
     fseek(database_f, chosen_pos, SEEK_SET);
 

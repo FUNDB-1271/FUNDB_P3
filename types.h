@@ -13,7 +13,7 @@
 
 #define MAX_TITLE 128
 #define MAX_PUBLISHEDBY 128
-#define MAX_ISBN 16 
+#define MAX_ISBN 16
 
 typedef enum {false, true} Bool;
 

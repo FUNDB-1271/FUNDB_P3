@@ -16,7 +16,7 @@ typedef enum { NO_CMD = 0, UNKNOWN, ADD, FIND, DEL, EXIT, PRINT_REC, PRINT_IND, 
 typedef struct {
     CommandCode cmdcode;
     int book_id;
-    char isbn[MAX_ISBN];
+    char isbn[MAX_ISBN + 1];
     char title[MAX_TITLE];
     char publishedby[MAX_PUBLISHEDBY];
     size_t total_size;
