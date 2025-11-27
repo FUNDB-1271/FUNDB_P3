@@ -163,10 +163,16 @@ void loop(DBInfo *database)
 
         /* read char-by-char */
         while ((c = fgetc(stdin)) != EOF) {
-            if (c == '\n' || c == '\r') {
-                /* terminate the line */
-                user_input[i] = '\0';
-                break;
+            if (c == '\r') {
+                /* consume optional following LF so CRLF becomes a single terminator */
+                int next = fgetc(stdin);
+                if (next != '\n' && next != EOF) {
+                    ungetc(next, stdin);
+                }
+                break; /* treat as end-of-line */
+            }
+            if (c == '\n') {
+                break; /* end-of-line */
             }
             if (i < MAX_INPUT - 1) {
                 user_input[i++] = (char)c;
@@ -195,8 +201,7 @@ void loop(DBInfo *database)
             fflush(stdout);
         } else {
             fflush(stdout);
-            fclose(stdin);
-            break;   // exit command ends the loop
+            break;   
         }
 
     }
