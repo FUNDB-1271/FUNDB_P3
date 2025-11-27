@@ -28,6 +28,8 @@ int command_execute(FILE *datafile, Index *index, FILE *indexfile, /*DeletedList
 
 int command_add(FILE *data_fp, Index *index, /*DeletedList *lst,*/ int strategy, Command command);
 
+void command_add_interpret_exit(Command cmd, int exit_code);
+
 int command_del();
 
 int command_exit(FILE *datafile, Index *index, char *filename_root /*, DeletedList *lst, FILE *deletedfile*/);

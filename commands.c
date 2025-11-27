@@ -85,8 +85,7 @@ int command_execute(FILE *datafile, Index *index, FILE *indexfile, /*DeletedList
     {
         case ADD:
             aux = command_add(datafile, index, /* lst, */strategy, command);
-            fprintf(stderr, "function add, return code: %d", aux);
-            fflush(stderr);
+            command_add_interpret_exit(command, aux);
             break;
         case DEL:
             command_del();
@@ -174,3 +173,30 @@ int command_print_ind(Index *index) {
 }
 
 int command_unknown() {}
+
+void command_add_interpret_exit(Command cmd, int exit_code) {
+
+        switch(exit_code)
+        {
+            case NoError:
+                fprintf(stdout, "Record with BookID=%d has been added to the database", cmd.book_id);
+                fflush(stdout);
+                break;
+            case BookExists: 
+                fprintf(stdout, "Record with BookID=%d already exists", cmd.book_id);
+                fflush(stdout);
+                break;
+            case WriteError:
+                fprintf(stdout, "Error writing to file");
+                fflush(stdout);
+                break;
+            case MemError: 
+                fprintf(stdout, "Memory failure");
+                fflush(stdout);
+                break;
+            default: 
+                fprintf(stdout, "Unknown error");
+                fflush(stdout);
+                break;
+        }
+}
