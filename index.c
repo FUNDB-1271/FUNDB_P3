@@ -46,9 +46,11 @@ int indexbook_get_key(IndexBook *book){
 }
 
 int indexbook_set_offset(IndexBook *book, size_t offset){
-    if (book == NULL || offset == 0){
+    if (book == NULL){
         return ERR;
     }
+
+    book->offset = offset;
 
     return OK;
 }

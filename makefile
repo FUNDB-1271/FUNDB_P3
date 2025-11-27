@@ -1,6 +1,6 @@
 CFLAGS?=-g -Wall -pedantic -Wextra
 CC=gcc 
-OBJ=library.o index.o delete.o commands.o
+OBJ=library.o index.o database.o commands.o
 EXE=library
 DBNAME=test
 
@@ -14,13 +14,16 @@ run:
 $(EXE): $(OBJ)
 	$(CC) -o $@ $(OBJ)
 
-library.o: library.c index.h commands.h
+library.o: library.c index.h commands.h database.h delete.h
 	$(CC) $(CFLAGS) -c $< 
 	
 index.o: index.c index.h
 	$(CC) $(CFLAGS) -c $<
 
 commands.o: commands.c
+	$(CC) $(CFLAGS) -c $<
+
+database.o: database.c
 	$(CC) $(CFLAGS) -c $<
 
 delete.o: delete.c 

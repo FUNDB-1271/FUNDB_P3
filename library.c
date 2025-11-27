@@ -11,7 +11,7 @@
 #define ERR -1
 #define OK !(ERR)
 
-#define EXIT -2
+#define EXITCODE -2
 
 #define BEST_FIT "best_fit"
 #define WORST_FIT "worst_fit"
@@ -27,7 +27,6 @@ typedef struct {
     Index *index;
     int strategy;
     char dbname[NAME_MAX];
-    CommandCode cmd;
 } DBInfo;
 
 
@@ -155,11 +154,18 @@ void loop(DBInfo *database)
 
     if (dbinfo_error(database)) return; 
 
-    while (fgets(user_input, MAX_INPUT, stdin) && database->cmd != EXIT)
+    while (fgets(user_input, MAX_INPUT, stdin))
     {
         command_parse(user_input, &current_command);
-        
-        command_execute(database->data_fp, database->index,/*database->del_list, */ database->strategy, current_command);
+        fprintf(stderr, "DEBUG: token='%s' cmdcode=%d (EXIT=%d)\n", strtok(strdup(user_input), " \t\n"), current_command.cmdcode, EXIT);
+        fflush(stderr);
+        if (current_command.cmdcode == EXIT)
+        {
+            command_execute(database->data_fp, database->index, database->index_fp, /*database->del_list, database->deleted_fp*/ database->strategy, current_command);
+            break;
+        }
+
+        command_execute(database->data_fp, database->index, database->index_fp, /*database->del_list, database->deleted_fp*/ database->strategy, current_command);
     }
 }
 

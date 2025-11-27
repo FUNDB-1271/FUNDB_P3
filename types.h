@@ -15,4 +15,6 @@
 
 typedef enum {false, true} Bool;
 
+typedef enum {NoError, UknError, BookExists, WriteError, MemError} AddErrors;
+
 #endif
