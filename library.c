@@ -6,11 +6,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define NAME_MAX 32
-
-#define ERR -1
-#define OK !(ERR)
-
 #define EXITCODE -2
 
 #define BEST_FIT "best_fit"
@@ -157,15 +152,14 @@ void loop(DBInfo *database)
     while (fgets(user_input, MAX_INPUT, stdin))
     {
         command_parse(user_input, &current_command);
-        fprintf(stderr, "DEBUG: token='%s' cmdcode=%d (EXIT=%d)\n", strtok(strdup(user_input), " \t\n"), current_command.cmdcode, EXIT);
-        fflush(stderr);
+
         if (current_command.cmdcode == EXIT)
         {
-            command_execute(database->data_fp, database->index, database->index_fp, /*database->del_list, database->deleted_fp*/ database->strategy, current_command);
+            command_execute(database->data_fp, database->index, database->index_fp, /*database->del_list, database->deleted_fp*/ database->strategy, current_command, database->dbname);
             break;
         }
 
-        command_execute(database->data_fp, database->index, database->index_fp, /*database->del_list, database->deleted_fp*/ database->strategy, current_command);
+        command_execute(database->data_fp, database->index, database->index_fp, /*database->del_list, database->deleted_fp*/ database->strategy, current_command, database->dbname);
     }
 }
 

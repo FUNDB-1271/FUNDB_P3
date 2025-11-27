@@ -1,6 +1,8 @@
 #ifndef TYPES_H
 #define TYPES_H
 
+#define NAME_MAX 32
+
 #define ERR -1
 #define OK !(ERR)
 

@@ -76,14 +76,17 @@ void command_parse(const char *input, Command *cmd)
     cmd->total_size = sizeof(int) + MAX_ISBN + strlen(cmd->title) + strlen(cmd->publishedby) + 1; /* total size of buffer written to memory */
 }
 
-int command_execute(FILE *datafile, Index *index, FILE *indexfile, /*DeletedList *lst, FILE *deletedfile, */ int strategy, Command command){
+int command_execute(FILE *datafile, Index *index, FILE *indexfile, /*DeletedList *lst, FILE *deletedfile, */ int strategy, Command command, char *filename_root){
+    int aux = 0;
 
     if (!datafile || !index || !indexfile /* || !lst || !deletedfile*/) return ERR;
 
     switch(command.cmdcode)
     {
         case ADD:
-            command_add(datafile, index, /* lst, */strategy, command);
+            aux = command_add(datafile, index, /* lst, */strategy, command);
+            fprintf(stderr, "function add, return code: %d", aux);
+            fflush(stderr);
             break;
         case DEL:
             command_del();
@@ -92,7 +95,7 @@ int command_execute(FILE *datafile, Index *index, FILE *indexfile, /*DeletedList
             command_find();
             break;
         case PRINT_IND:
-            command_print_ind();
+            command_print_ind(index);
             break;
         case PRINT_LST:
             command_print_lst();
@@ -101,7 +104,7 @@ int command_execute(FILE *datafile, Index *index, FILE *indexfile, /*DeletedList
             command_print_rec();
             break;
         case EXIT:
-            command_exit(datafile, index, indexfile /*, lst, deletedfile*/);
+            command_exit(datafile, index, filename_root /*, lst, deletedfile*/);
             break;
         default:
             command_unknown();
@@ -143,12 +146,13 @@ int command_add(FILE *data_fp, Index *index, /*DeletedList *lst,*/ int strategy,
 
 int command_del() {}
 
-int command_exit(FILE *datafile, Index *index, FILE *index_file /*, DeletedList *lst, FILE *deletedfile*/) {
+int command_exit(FILE *datafile, Index *index, char *filename_root /*, DeletedList *lst */) {
+    char filename[NAME_MAX + 4];
 
+    if (!datafile || !index || !filename_root /*|| !lst || !deletedfile*/) return ERR;
 
-    if (!datafile || !index || !index_file/*|| !lst || !deletedfile*/) return ERR;
-
-    index_save(index, index_file);
+    snprintf(filename, sizeof(filename), "%s.ind", filename_root);
+    index_save(index, filename);
 /*
     deleted_save(lst, deletedfile);
 */  
@@ -161,6 +165,12 @@ int command_print_rec() {}
 
 int command_print_lst() {}
 
-int command_print_ind() {}
+int command_print_ind(Index *index) {
+    if (!index) return ERR;
+
+    index_print(index);
+
+    return OK;
+}
 
 int command_unknown() {}

@@ -24,13 +24,13 @@ typedef struct {
 
 void command_parse(const char *input, Command *cmd);
 
-int command_execute(FILE *datafile, Index *index, FILE *indexfile, /*DeletedList *lst, FILE *deletedfile, */ int strategy, Command command);
+int command_execute(FILE *datafile, Index *index, FILE *indexfile, /*DeletedList *lst, FILE *deletedfile, */ int strategy, Command command, char *filename_root);
 
 int command_add(FILE *data_fp, Index *index, /*DeletedList *lst,*/ int strategy, Command command);
 
 int command_del();
 
-int command_exit(FILE *datafile, Index *index, FILE *index_file /*, DeletedList *lst, FILE *deletedfile*/);
+int command_exit(FILE *datafile, Index *index, char *filename_root /*, DeletedList *lst, FILE *deletedfile*/);
 
 int command_find();
 
