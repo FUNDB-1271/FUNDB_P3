@@ -201,7 +201,7 @@ Index *index_init_from_file(FILE *index_fp) {
         index->books[index->used++] = book;
     }
 
-    fclose(index_fp);
+    fflush(index_fp);
 
 
     return index;
