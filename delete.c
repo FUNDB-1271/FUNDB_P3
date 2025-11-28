@@ -51,11 +51,15 @@ size_t deletedlist_get_offset(DeletedList *deletedlist, int pos){
     return deletedlist->deleted[pos].offset;
 }
 
-int deletedlist_add(DeletedList *deletedlist, IndexDeletedBook *indexdeletedbook){
+int deletedlist_add(DeletedList *deletedlist, IndexBook *indexbook, int strategy){
     int i, j;
-    IndexDeletedBook temp;
 
-    if (deletedlist == NULL || indexdeletedbook == NULL){
+    IndexDeletedBook deletedbook, temp;
+
+    deletedbook.register_size = indexbook_get_size(indexbook);
+    deletedbook.offset = indexbook_get_offset(indexbook);
+
+    if (deletedlist == NULL || indexbook == NULL){
         return -1;
     }
 
@@ -73,71 +77,101 @@ int deletedlist_add(DeletedList *deletedlist, IndexDeletedBook *indexdeletedbook
         return -1;
     }
 
-    deletedlist->deleted[deletedlist->used] = *indexdeletedbook;
+    if (strategy == FIRSTFIT){
+        deletedlist->deleted[deletedlist->used++] = deletedbook;
+        return OK;  
+    }
+    else if(strategy == BESTFIT){
+        i = 0;
+        while (i < deletedlist->used && deletedlist->deleted[i].register_size < deletedbook.register_size){
+            i++;
+        }
+    }
+    else if(strategy == WORSTFIT){
+        i = 0;
+        while (i < deletedlist->used && deletedlist->deleted[i].register_size > deletedbook.register_size){
+            i++;
+        }        
+    }
+    else{
+        return ERR;
+    }
+
+    for (j = deletedlist->used; j > i; j--) {
+        deletedlist->deleted[j] = deletedlist->deleted[j-1];
+    }
+
+    deletedlist->deleted[i] = deletedbook;
     deletedlist->used++;
-
-    return 0;
-}
-
-int deletedlist_del(DeletedList *deletedlist, int pos){
-    int i;
-
-    if (deletedlist == NULL || pos > deletedlist->used || pos < 0){
-        return -1;
-    }
-
     
-    for (i = pos; i < deletedlist->used-1; i++){
-        deletedlist->deleted[i] = deletedlist->deleted[i+1];
+    return OK;
+}
+
+int deletedlist_del(DeletedList *deletedlist, IndexBook *indexbook, int strategy){
+    int i, pos;
+
+    if (deletedlist == NULL){
+        return ERR;
     }
 
-    deletedlist->used--;
+    if (strategy == BESTFIT){
+        pos = deletedlist_findbestfit(deletedlist, indexbook_get_size(indexbook));
+        if (pos == ERR || pos == NO_POS){
+            return ERR;
+        }
+    }
+    else if(strategy == WORSTFIT){
+        pos = deletedlist_findworstfit(deletedlist, indexbook_get_size(indexbook));
+        if (pos == ERR || pos == NO_POS){
+            return ERR;
+        }
+    }
+    else if (strategy == FIRSTFIT){
+        pos = deletedlist_findfirstfit(deletedlist, indexbook_get_size(indexbook));
+        if (pos == ERR || pos == NO_POS){
+            return ERR;
+        }
+    }
+    else{
+        return ERR;
+    }
 
-    return 0;
+    if (deletedlist->deleted[pos].register_size == indexbook_get_size(indexbook)){
+        for (i = pos; i < deletedlist->used-1; i++){
+            deletedlist->deleted[i] = deletedlist->deleted[i+1];
+        }
+
+        deletedlist->used--;
+        return OK;
+    }
+    else if (deletedlist->deleted[pos].register_size > indexbook_get_size(indexbook)){
+        deletedlist->deleted[pos].register_size -= indexbook_get_size(indexbook);
+
+        return OK;
+    }
+
+    return ERR;
 }
 
 
-int deletedlist_update(DeletedList *deletedlist, size_t book_size, int strategy){
-    if (deletedlist == NULL || book_size == 0){
+int deletedlist_update(DeletedList *deletedlist, IndexBook *indexbook, int strategy, int command){
+    if (deletedlist == NULL || command == NO_CMD){
         return -1;
     }
 
     int pos;
-
-    if (strategy == BESTFIT){
-        pos = deletedlist_findbestfit(deletedlist, book_size);
-        if (pos == -1){
-            return -1;
+    
+    if(command == ADD){
+        if (deletedlist_del(deletedlist, indexbook, strategy) == ERR){
+            return ERR;
         }
     }
-    else if(strategy == WORSTFIT){
-        pos = deletedlist_findworstfit(deletedlist, book_size);
-        if (pos == -1){
-            return -1;
+    else if(command == DEL){
+        if (deletedlist_add(deletedlist, indexbook, strategy) == ERR){
+            return ERR;
         }
-    }
-    else if (strategy == FIRSTFIT){
-        pos = deletedlist_findfirstfit(deletedlist, book_size);
-        if (pos == -1){
-            return -1;
-        }
-    }
-    else{
-        return -1;
     }
     
-
-    if (deletedlist->deleted[pos].register_size == book_size){
-        if (deletedlist_del(deletedlist, pos) == -1){
-            return -1;
-        }
-    }
-    else if (deletedlist->deleted[pos].register_size > book_size){
-        deletedlist->deleted[pos].register_size -= book_size;
-    }
-    else{
-        return -1;
-    }
 
     return 0;
 }
@@ -147,7 +181,7 @@ int deletedlist_findbestfit(DeletedList *deletedlist, size_t book_size){
     size_t min = 0;
 
     if (deletedlist == NULL || deletedlist->deleted == NULL){
-        return -1;
+        return ERR;
     }
 
     for (i = 0; i < deletedlist->used; i++){
