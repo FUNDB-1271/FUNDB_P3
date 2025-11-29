@@ -3,9 +3,8 @@
 
 #define NAME_MAX 32
 
+#define OK 0
 #define ERR -1
-#define OK !(ERR)
-
 #define NO_POS -2
 #define NOT_FOUND -3
 
@@ -17,6 +16,6 @@
 
 typedef enum {false, true} Bool;
 
-typedef enum {NoError, UknError, BookExists, WriteError, MemError} AddErrors;
+typedef enum {NoError = 1, UknError, BookExists, WriteError, MemError} AddErrors;
 
 #endif

@@ -17,7 +17,6 @@ struct _index {
 };
 
 
-
 IndexBook *indexbook_init(int key, long int offset, size_t size) {
     IndexBook *book = (IndexBook *) malloc(sizeof(IndexBook));
     if (book) {
@@ -31,6 +30,15 @@ IndexBook *indexbook_init(int key, long int offset, size_t size) {
 
 void indexbook_free(IndexBook *book) {
     if (book) free(book);
+}
+
+int indexbook_set_size(IndexBook *book, size_t size){
+    if (book == NULL){
+        return ERR;
+    }
+
+    book->size = size;
+    return OK;
 }
 
 size_t indexbook_get_size(IndexBook *book){
@@ -89,6 +97,14 @@ void index_free(Index *ind) {
         ind->books = NULL;
         free(ind);
     }
+}
+
+IndexBook* index_get_indexbook(Index *ind, int pos){
+    if (ind == NULL){
+        return NULL;
+    }
+
+    return ind->books[pos];
 }
 
 int index_add(Index *ind, IndexBook *book) {
@@ -227,7 +243,6 @@ void index_print(Index *ind) {
 
 int index_del(Index *ind, int key) {
     int m;
-    int flag = 0;
 
     if (!ind || !ind->books || ind->used == 0) return -1;
 
@@ -250,7 +265,7 @@ int index_del(Index *ind, int key) {
 }
 
 int index_find(Index *ind, int key){
-    int a, b, m, flag = 0;
+    int a, b, m;
 
     if (ind == NULL || key < 0){
         return ERR;
@@ -264,7 +279,6 @@ int index_find(Index *ind, int key){
         m = a + (b - a) / 2; /* minimize overflow */
 
         if (key == ind->books[m]->key) {
-            flag = 1;
             return m;
         } else if (key < ind->books[m]->key) {
             b = m - 1;

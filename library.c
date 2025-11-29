@@ -1,6 +1,7 @@
 #include "types.h"
 #include "commands.h"
 #include "index.h"
+#include "deletedlist.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -15,10 +16,8 @@
 typedef struct {
     FILE *data_fp;
     FILE *index_fp;
-    FILE *deleted_fp;
-/*   
-    DeletedList *del_list;
-*/
+    FILE *deleted_fp; 
+    DeletedList *deletedlist;
     Index *index;
     int strategy;
     char dbname[NAME_MAX];
@@ -128,24 +127,23 @@ int _library_init(char *dbname, char *strategy, DBInfo *database){
         return ERR;        
     }
 
-
-/*
-    if (!(database->del_list = deletedlist_init_from_file(database->dbname))) {
+    if (!(database->deletedlist = deletedlist_init_from_file(database->deleted_fp))) {
         fprintf(stderr, "Error loading deleted list structure\n");
-        index_free(database->index);
+        deletedlist_free(database->deletedlist);
         fclose(database->data_fp);
         fclose(database->index_fp);
         fclose(database->deleted_fp);
         return ERR;
     }
-*/
+
     return OK;
 }
 
 void loop(DBInfo *database) 
 {
     char user_input[MAX_INPUT];
-    Command current_command = {0};
+    CommandCode current_command_code = NO_CMD;
+    Book *book = NULL;
 
     if (dbinfo_error(database)) return; 
 
@@ -184,13 +182,13 @@ void loop(DBInfo *database)
         /* If nothing but an empty line, continue waiting for input */
         if (strlen(user_input) == 0) continue;
 
-        command_parse(user_input, &current_command);
+        book = command_parse(user_input, &current_command_code);
 
-        command_execute(database->data_fp, database->index, database->index_fp,
-                        database->strategy, current_command, database->dbname);
+        command_execute(database->data_fp, database->index, database->index_fp, database->deletedlist, book, database->deleted_fp,
+                        database->strategy, current_command_code, database->dbname);
 
         /* PRINT EXIT ONLY IF NOT LAST COMMAND */
-        if (current_command.cmdcode != EXIT) {
+        if (current_command_code != EXIT) {
             fprintf(stdout, "exit\n");
             fflush(stdout);
         } else {
@@ -218,13 +216,11 @@ void _library_cleanup(DBInfo **database) {
             fclose((*database)->deleted_fp); 
             (*database)->deleted_fp = NULL; 
         }
-/*
-        if ((*database)->del_list) 
+        if ((*database)->deletedlist) 
         { 
-            deletedlist_free((*database)->del_list); 
-            (*database)->del_list = NULL; 
-        }
-*/  
+            deletedlist_free((*database)->deletedlist); 
+            (*database)->deletedlist = NULL; 
+        } 
         if ((*database)->index) 
         { 
             index_free((*database)->index); 
@@ -242,9 +238,7 @@ Bool dbinfo_error(DBInfo *db)
     if (!db->deleted_fp) return true;
     if (!db->index_fp) return true;
     if (!db->index) return true;
-/*
-    if (!db->del_list) return true;
-*/
+    if (!db->deletedlist) return true;
     if (db->strategy != BESTFIT && db->strategy != WORSTFIT && db->strategy != FIRSTFIT) return true;
 
     return false;
