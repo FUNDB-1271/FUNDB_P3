@@ -187,6 +187,10 @@ void loop(DBInfo *database)
         command_execute(database->data_fp, database->index, database->index_fp, database->deletedlist, book, database->deleted_fp,
                         database->strategy, current_command_code, database->dbname);
 
+        if (book){
+            book_free(book);
+        }
+
         /* PRINT EXIT ONLY IF NOT LAST COMMAND */
         if (current_command_code != EXIT) {
             fprintf(stdout, "exit\n");

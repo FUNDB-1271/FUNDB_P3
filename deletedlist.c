@@ -142,13 +142,16 @@ int deletedlist_add(DeletedList *deletedlist, IndexBook *indexbook, int strategy
 int deletedlist_del(DeletedList *deletedlist, IndexBook *indexbook, int strategy){
     int i, pos;
 
-    if (deletedlist == NULL){
+    if (deletedlist == NULL || indexbook == NULL){
         return ERR;
     }
 
     pos = deletedlist_find(deletedlist, indexbook_get_size(indexbook), strategy);
-    if (pos == ERR || pos == NO_POS){
+    if (pos == ERR){
         return ERR;
+    }
+    else if (pos == NO_POS){
+        return NO_POS;
     }
     
     if (deletedlist->deleted[pos].register_size == indexbook_get_size(indexbook)){
@@ -171,7 +174,7 @@ int deletedlist_del(DeletedList *deletedlist, IndexBook *indexbook, int strategy
 
 int deletedlist_update(DeletedList *deletedlist, IndexBook *indexbook, int strategy, int command_code){
     if (deletedlist == NULL || command_code == NO_CMD){
-        return -1;
+        return ERR;
     }
     
     if(command_code == ADD){
@@ -232,7 +235,7 @@ int deletedlist_findfirstfit(DeletedList *deletedlist, size_t book_size){
     int i;
 
     if (deletedlist == NULL || deletedlist->deleted == NULL){
-        return -1;
+        return ERR;
     }
 
     for (i = 0; i < deletedlist->used; i++){
@@ -255,7 +258,7 @@ int deletedlist_find(DeletedList *deletedlist, size_t book_size, int strategy){
     else if (strategy == WORSTFIT){
         return deletedlist_findworstfit(deletedlist, book_size);
     }
-    else if (strategy == FIRSTFIT){ 
+    else if (strategy == FIRSTFIT){
         return deletedlist_findfirstfit(deletedlist, book_size);
     }
 
@@ -298,34 +301,43 @@ DeletedList *deletedlist_init_from_file(FILE *deletedlist_fp) {
     deletedlist = deletedlist_init();
     if (deletedlist == NULL){
         return NULL;
-    }      
+    }
 
     while (1) 
     {
         long int offset; 
         size_t register_size;
 
-        /* expandir array */
+        /* lectura binaria del offset */
+        if (fread(&offset, sizeof(offset), 1, deletedlist_fp) != 1) {
+            /* EOF -> terminado correctamente */
+            if (feof(deletedlist_fp)) break;
+            /* lectura parcial / error de lectura -> cleanup y fallo */
+            deletedlist_free(deletedlist);
+            return NULL;
+        }
+
+        /* lectura binaria del register_size */
+        if (fread(&register_size, sizeof(register_size), 1, deletedlist_fp) != 1) {
+            /* lectura parcial -> cleanup y fallo */
+            deletedlist_free(deletedlist);
+            return NULL;
+        }
+
+        /* expandir array si es necesario */
         if (deletedlist->size == deletedlist->used) {
-            deletedlist->size *= 2;
-            deletedlist->deleted = realloc(deletedlist->deleted, deletedlist->size * sizeof(IndexBook *));
-            if (deletedlist->deleted){
-                if (deletedlist) deletedlist_free(deletedlist);
+            int new_size = deletedlist->size * 2;
+            if (new_size == 0) new_size = DELETEDLIST_INIT_SIZE;
+            IndexDeletedBook *tmp = realloc(deletedlist->deleted, new_size * sizeof(IndexDeletedBook));
+            if (tmp == NULL) {
+                deletedlist_free(deletedlist);
                 return NULL;
             }
+            deletedlist->deleted = tmp;
+            deletedlist->size = new_size;
         }
 
-        /* lectura binaria */
-        if (fread(&offset, sizeof(offset), 1, deletedlist_fp) != 1){
-            if (deletedlist_fp) fclose(deletedlist_fp);
-            if (deletedlist) deletedlist_free(deletedlist);
-            break;
-        }
-        if (fread(&register_size, sizeof(register_size), 1, deletedlist_fp) != 1){
-            if (deletedlist_fp) fclose(deletedlist_fp);
-            if (deletedlist) deletedlist_free(deletedlist);
-        }
-
+        /* almacenar la entrada leída */
         if (indexdeletedbook_set_offset(&deletedlist->deleted[deletedlist->used], offset) == ERR){
             if (deletedlist_fp) fclose(deletedlist_fp);
             if (deletedlist) deletedlist_free(deletedlist);
@@ -337,16 +349,17 @@ DeletedList *deletedlist_init_from_file(FILE *deletedlist_fp) {
             if (deletedlist) deletedlist_free(deletedlist);
             return NULL;
         }
-        
         deletedlist->used++;
     }
 
     return deletedlist;
 }
 
+
 void deletedlist_print(DeletedList *deletedList) {
     int i;
     if (deletedList == NULL || deletedList->deleted == NULL) return;
+
     for (i = 0 ; i < deletedList->used ; i++) {
         fprintf(stdout, "Entry #%d\n", i);
         fprintf(stdout, "\toffset: #%ld\n", deletedList->deleted[i].offset);

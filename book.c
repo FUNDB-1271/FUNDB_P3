@@ -108,5 +108,13 @@ int book_set_total_size(Book *book, size_t size) {
     return OK;
 }
 
+void book_print(Book *book){
+    if (book == NULL){
+        return;
+    }
+
+    printf("%d|%s|%s|%s\n", book->book_id, book->isbn, book->title, book->publishedby);
+}
+
 
 

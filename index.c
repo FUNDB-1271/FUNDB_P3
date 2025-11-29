@@ -107,6 +107,14 @@ IndexBook* index_get_indexbook(Index *ind, int pos){
     return ind->books[pos];
 }
 
+size_t index_get_used(Index *index){
+    if (index == NULL){
+        return 0;
+    }
+
+    return index->used;
+}
+
 int index_add(Index *ind, IndexBook *book) {
     int m, a = 0, b = ind->used - 1;
 
@@ -144,7 +152,7 @@ int index_add(Index *ind, IndexBook *book) {
     ind->books[a] = book;
     ind->used++;
 
-    return 0;
+    return OK;
 }
 
 int index_save(Index *ind, char *file) {
@@ -235,9 +243,11 @@ void index_print(Index *ind) {
     size_t i;
     if (!ind || !ind->books) return;
     for (i = 0 ; i < ind->used ; i++) {
-        fprintf(stdout, "Entry #%ld\n", i);
+        fprintf(stdout, "Entry #%d\n", (int)i);
         fprintf(stdout, "    key: #%d\n", ind->books[i]->key);
         fprintf(stdout, "    offset: #%ld\n", ind->books[i]->offset);
+        fprintf(stdout, "    size: #%ld\n", ind->books[i]->size);
+        fflush(stdout);
     }   
 }
 
@@ -254,6 +264,10 @@ int index_del(Index *ind, int key) {
         indexbook_free(ind->books[m]);
         if (m < (int) ind->used - 1) {
             memmove(&(ind->books[m]), &(ind->books[m+1]), (ind->used - m - 1) * sizeof(IndexBook *));
+            ind->used--;
+            ind->books[ind->used] = NULL;
+        }
+        else if(m == (int) ind->used - 1){
             ind->used--;
             ind->books[ind->used] = NULL;
         }

@@ -86,10 +86,12 @@ Book* command_parse(const char *input, CommandCode *command_code){
         }
     }
 
-    if (book_set_total_size(book, sizeof(int) + MAX_ISBN + strlen(book_get_title(book)) + strlen(book_get_publishedby(book)) + 1) == ERR){
-        book_free(book);
-        return NULL;
-    }
+    if (*command_code == ADD){
+        if (book_set_total_size(book, sizeof(int) + MAX_ISBN + strlen(book_get_title(book)) + strlen(book_get_publishedby(book)) + 1) == ERR){
+            book_free(book);
+            return NULL;
+        }
+    }  
 
     return book;
 }
@@ -106,19 +108,21 @@ int command_execute(FILE *datafile, Index *index, FILE *indexfile, DeletedList *
             command_add_interpret_exit(book, aux);
             break;
         case DEL:
-            command_del(datafile, index, deletedlist, strategy, book_get_id(book));
+            if (command_del(datafile, index, deletedlist, strategy, book_get_id(book)) == ERR){
+                return ERR;
+            }
             break;
         case FIND:
-            command_find();
+            command_find(datafile, index, book_get_id(book));
             break;
         case PRINT_IND:
             command_print_ind(index);
             break;
         case PRINT_LST:
-            command_print_lst();
+            command_print_lst(deletedlist);
             break;
         case PRINT_REC:
-            command_print_rec();
+            command_print_rec(datafile, index);
             break;
         case EXIT:
             command_exit(datafile, index, filename_root, deletedlist, deletedfile);
@@ -132,30 +136,41 @@ int command_execute(FILE *datafile, Index *index, FILE *indexfile, DeletedList *
 }
 
 int command_add(FILE *data_fp, Index *index, DeletedList *deletedlist, Book *book, int strategy) {
-    long offset = NO_POS;
+    long int index_pos = NO_POS;
+    size_t offset = 0;
+    long write_pos;  // Añadir para guardar la posición real
     int ret = OK;
     IndexBook *indexbook = NULL;
 
-    if (!(indexbook = indexbook_init(book_get_id(book), 0, book_get_total_size(book)))) return MemError;
+    if (!book || !data_fp || !index || (strategy != BESTFIT && strategy != WORSTFIT && strategy != FIRSTFIT) || !deletedlist) return ERR;
 
-    if (!book || !data_fp || !index || (strategy != BESTFIT && strategy != WORSTFIT && strategy != FIRSTFIT) || deletedlist) return ERR;
+    
+    if (!(indexbook = indexbook_init(book_get_id(book), 0, book_get_total_size(book)))) return MemError;
 
     ret = index_find(index, book_get_id(book));
     if (ret != NOT_FOUND) return BookExists;
 
-    offset = deletedlist_find(deletedlist, book_get_total_size(book), strategy);
-    if (offset == ERR || offset == NO_POS) return ERR;
+    index_pos = deletedlist_find(deletedlist, book_get_total_size(book), strategy);
+    if (index_pos == ERR) return ERR;
 
-    offset = database_add(data_fp, offset, book_get_id(book), book_get_title(book), book_get_isbn(book), book_get_publishedby(book));
-    if (offset == NO_POS) return WriteError;
+    if (index_pos != NO_POS && index_pos != NOT_FOUND){
+        offset = deletedlist_get_offset(deletedlist, index_pos);
+    }
 
-    indexbook_set_offset(indexbook, offset);
+    // Guardar la posición real de escritura
+    write_pos = database_add(data_fp, offset, book_get_id(book), book_get_title(book), book_get_isbn(book), book_get_publishedby(book));
+    if (write_pos == ERR) return WriteError;
 
-    ret = index_add(index, indexbook);
-    if (ret != 0) return MemError;
+    // Usar la posición REAL, no el offset que pasamos
+    if (indexbook_set_offset(indexbook, write_pos) == ERR){
+        return ERR;
+    }
 
     ret = deletedlist_update(deletedlist, indexbook, strategy, ADD);
     if (ret == ERR) return ERR;
+
+    ret = index_add(index, indexbook);
+    if (ret != OK) return MemError;
 
     fflush(data_fp);
     return NoError;
@@ -164,20 +179,17 @@ int command_add(FILE *data_fp, Index *index, DeletedList *deletedlist, Book *boo
 int command_del(FILE *data_fp, Index *index, DeletedList *deletedlist, int strategy, int key) {
     int pos;
 
-    if (!data_fp || !index || (strategy != BESTFIT && strategy != WORSTFIT && strategy != FIRSTFIT) || deletedlist){
+    if (!data_fp || !index || (strategy != BESTFIT && strategy != WORSTFIT && strategy != FIRSTFIT) || !deletedlist){
         return ERR;
     }
 
     pos = index_find(index, key);
     if (pos == NOT_FOUND){
+        printf ("Record with bookId=%d does not exist\n", key);
         return NOT_FOUND;
     }
 
-    if (database_del(index, deletedlist, index_get_indexbook(index, pos), strategy) == ERR){
-        return ERR;
-    }
-
-    if (index_del(index, key) == ERR){
+    if (database_del(data_fp, index, deletedlist, index_get_indexbook(index, pos)) == ERR){
         return ERR;
     }
 
@@ -185,7 +197,12 @@ int command_del(FILE *data_fp, Index *index, DeletedList *deletedlist, int strat
         return ERR;
     }
 
+    if (index_del(index, key) == ERR){
+        return ERR;
+    }
+
     fflush(data_fp);
+    printf("Record with BookID=%d has been deleted\n", key);
 
     return OK;
 }
@@ -197,17 +214,40 @@ int command_exit(FILE *datafile, Index *index, char *filename_root, DeletedList 
 
     snprintf(filename, sizeof(filename), "%s.ind", filename_root);
     index_save(index, filename);
-    snprintf(filename, sizeof(filename), "%s.del", filename_root);
+    snprintf(filename, sizeof(filename), "%s.lst", filename_root);
     deletedlist_save(deletedlist, filename);
 
     return OK;
 }
 
-int command_find() {return OK;}
+int command_find(FILE *data_fp, Index *index, int key) {
+    if (data_fp == NULL || index == NULL){
+        return ERR;
+    }
 
-int command_print_rec() {return OK;}
+    if (database_find(data_fp, index, key) == ERR){
+        return ERR;
+    }
 
-int command_print_lst() {return OK;}
+    return OK;
+}
+
+int command_print_rec(FILE *data_fp, Index *index) {
+    if (data_fp == NULL || index == NULL){
+        return ERR;
+    }
+
+    database_print_rec(data_fp, index);
+    return OK;
+}
+
+int command_print_lst(DeletedList *deletedlist) {
+    if (!deletedlist) return ERR;
+
+    deletedlist_print(deletedlist);
+
+    return OK;
+}
 
 int command_print_ind(Index *index) {
     if (!index) return ERR;

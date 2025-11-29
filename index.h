@@ -34,6 +34,8 @@ void index_free(Index *ind);
 
 IndexBook* index_get_indexbook(Index *ind, int pos);
 
+size_t index_get_used(Index *Index);
+
 int index_add(Index *ind, IndexBook *book);
 
 int index_save(Index *ind, char *file);

@@ -40,3 +40,71 @@ clean:
 
 clean_db:
 	rm $(DBNAME).db $(DBNAME).ind $(DBNAME).lst 
+
+# Regla para ejecutar todos los tests de la carpeta tests
+test-all:
+	@echo "Ejecutando todos los tests..."
+	@echo "======================================"
+	@failed=0; \
+	total=0; \
+	for test in tests/*.sh; do \
+		total=$$((total + 1)); \
+		echo "Ejecutando $$(basename "$$test")..."; \
+		chmod +x "$$test" 2>/dev/null; \
+		echo "--------------------------------------"; \
+		if timeout 30s "$$test"; then \
+			echo "PASO: $$(basename "$$test")"; \
+		else \
+			echo "FALLO: $$(basename "$$test")"; \
+			failed=$$((failed + 1)); \
+		fi; \
+		echo ""; \
+	done; \
+	echo "Resultados: $$((total - failed))/$$total tests pasaron"; \
+	if [ $$failed -eq 0 ]; then \
+		echo "Todos los tests pasaron correctamente"; \
+	else \
+		echo "$failed test(s) fallaron"; \
+		exit 1; \
+	fi
+
+# Regla para ejecutar un test específico
+test-%:
+	@if [ -f "tests/$*.sh" ]; then \
+		echo "Ejecutando tests/$*.sh"; \
+		chmod +x "tests/$*.sh"; \
+		"tests/$*.sh"; \
+	else \
+		echo "Error: Test tests/$*.sh no encontrado"; \
+		exit 1; \
+	fi
+
+# Regla para listar todos los tests disponibles
+list-tests:
+	@echo "Tests disponibles:"; \
+	for test in tests/*.sh; do \
+		echo "  - $$(basename "$$test" .sh)"; \
+	done
+
+# Crear la carpeta tests si no existe
+tests-dir:
+	@mkdir -p tests
+
+# Limpiar archivos generados por los tests
+clean-tests:
+	@echo "Limpiando archivos de tests..."
+	@rm -f test*.db test*.ind test*.lst
+
+# Ejecutar tests con valgrind
+test-valgrind:
+	@echo "Ejecutando tests con valgrind..."
+	@for test in tests/*.sh; do \
+		echo "Test: $$test con valgrind"; \
+		chmod +x "$$test"; \
+		if ! valgrind --leak-check=full --error-exitcode=1 "$$test" 2>/dev/null; then \
+			echo "FALLO: $$test tiene memory leaks"; \
+			exit 1; \
+		else \
+			echo "PASO: $$test sin memory leaks"; \
+		fi; \
+	done

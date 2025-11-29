@@ -25,7 +25,7 @@ int command_del(FILE *data_fp, Index *index, DeletedList *deletedlist, int strat
 
 int command_exit(FILE *datafile, Index *index, char *filename_root, DeletedList *deletedlist, FILE *deletedfile);
 
-int command_find();
+int command_find(FILE *data_fp, Index *index, int key);
 
 int command_print_rec();
 
