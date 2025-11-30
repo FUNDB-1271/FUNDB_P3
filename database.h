@@ -4,7 +4,7 @@
 #include "deletedlist.h"
 #include "index.h"
 
-int database_add(FILE *database_f, size_t offset, int book_id, const char *title, const char *isbn, const char *publisher);
+long database_add(FILE *database_f, long offset, int book_id, const char *title, const char *isbn, const char *publisher);
 
 int database_find(FILE *fdb, Index *ind, int key);
 

@@ -137,7 +137,7 @@ int command_execute(FILE *datafile, Index *index, FILE *indexfile, DeletedList *
 
 int command_add(FILE *data_fp, Index *index, DeletedList *deletedlist, Book *book, int strategy) {
     long int index_pos = NO_POS;
-    size_t offset = 0;
+    long offset = NO_POS;
     long write_pos;  // Añadir para guardar la posición real
     int ret = OK;
     IndexBook *indexbook = NULL;
@@ -154,7 +154,7 @@ int command_add(FILE *data_fp, Index *index, DeletedList *deletedlist, Book *boo
     if (index_pos == ERR) return ERR;
 
     if (index_pos != NO_POS && index_pos != NOT_FOUND){
-        offset = deletedlist_get_offset(deletedlist, index_pos);
+        offset = (long)deletedlist_get_offset(deletedlist, index_pos);
     }
 
     // Guardar la posición real de escritura

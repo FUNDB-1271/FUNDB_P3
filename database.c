@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-int database_add(FILE *database_f, size_t offset, int book_id, const char *title, const char *isbn, const char *publisher) {
+long database_add(FILE *database_f, long offset, int book_id, const char *title, const char *isbn, const char *publisher) {
     size_t title_length, publisher_length, total_length;
     char isbn_cpy[MAX_ISBN], a = '|';
     long chosen_pos, file_size, write_pos;  // Añadir write_pos
@@ -20,14 +20,13 @@ int database_add(FILE *database_f, size_t offset, int book_id, const char *title
     /* find file size */
     if (fseek(database_f, 0, SEEK_END) != 0) return ERR;
     file_size = ftell(database_f);
-    if (file_size < 0) return ERR;
 
     /* decide write position */
-    if (offset == 0) {
+    if (offset == NO_POS) {
         chosen_pos = file_size; /* append */
     } else {
         /* clamp offset to file end if it's beyond EOF */
-        chosen_pos = ((long)offset > file_size) ? file_size : (long)offset;
+        chosen_pos = (offset > file_size) ? file_size : offset;
     }
 
     // Guardar la posición real donde vamos a escribir
