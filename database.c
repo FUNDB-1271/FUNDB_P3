@@ -135,7 +135,7 @@ int database_find(FILE *fdb, Index *ind, int key){
         return ERR;
     }
     else if (pos == NOT_FOUND){
-        printf("Record with bookId=%d does not exist\n", key);
+        printf("Item with key %d does not exist\n", key);
         return NOT_FOUND;
     }
 

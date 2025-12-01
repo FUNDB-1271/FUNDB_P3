@@ -185,7 +185,7 @@ int command_del(FILE *data_fp, Index *index, DeletedList *deletedlist, int strat
 
     pos = index_find(index, key);
     if (pos == NOT_FOUND){
-        printf ("Record with bookId=%d does not exist\n", key);
+        printf ("Item with key %d does not exist\n", key);
         return NOT_FOUND;
     }
 

@@ -362,7 +362,7 @@ void deletedlist_print(DeletedList *deletedList) {
 
     for (i = 0 ; i < deletedList->used ; i++) {
         fprintf(stdout, "Entry #%d\n", i);
-        fprintf(stdout, "\toffset: #%ld\n", deletedList->deleted[i].offset);
-        fprintf(stdout, "\tsize: #%ld\n", deletedList->deleted[i].register_size);        
+        fprintf(stdout, "    offset: #%ld\n", deletedList->deleted[i].offset);
+        fprintf(stdout, "    size: #%ld\n", deletedList->deleted[i].register_size);        
     }   
 }
