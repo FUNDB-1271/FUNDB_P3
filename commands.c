@@ -125,7 +125,7 @@ int command_execute(FILE *datafile, Index *index, FILE *indexfile, DeletedList *
             command_print_rec(datafile, index);
             break;
         case EXIT:
-            command_exit(datafile, index, filename_root, deletedlist, deletedfile);
+            command_exit(datafile, index, filename_root, deletedlist, deletedfile, strategy);
             break;
         default:
             command_unknown();
@@ -207,7 +207,7 @@ int command_del(FILE *data_fp, Index *index, DeletedList *deletedlist, int strat
     return OK;
 }
 
-int command_exit(FILE *datafile, Index *index, char *filename_root, DeletedList *deletedlist, FILE *deletedfile) {
+int command_exit(FILE *datafile, Index *index, char *filename_root, DeletedList *deletedlist, FILE *deletedfile, int strategy) {
     char filename[NAME_MAX + 4];
 
     if (!datafile || !index || !filename_root || !deletedlist || !deletedfile) return ERR;
@@ -215,7 +215,7 @@ int command_exit(FILE *datafile, Index *index, char *filename_root, DeletedList 
     snprintf(filename, sizeof(filename), "%s.ind", filename_root);
     index_save(index, filename);
     snprintf(filename, sizeof(filename), "%s.lst", filename_root);
-    deletedlist_save(deletedlist, filename);
+    deletedlist_save(deletedlist, filename, strategy);
 
     return OK;
 }

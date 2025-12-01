@@ -265,16 +265,19 @@ int deletedlist_find(DeletedList *deletedlist, size_t book_size, int strategy){
     return ERR;
 }
 
-int deletedlist_save(DeletedList *deletedlist, char *file) {
+int deletedlist_save(DeletedList *deletedlist, char *file, int strategy) {
     int k = 0;
     FILE *temp = NULL;
 
     if (!deletedlist || !deletedlist->deleted || !file) return ERR;
 
-    /* create temporary file to ensure either all of the index is written or the file stays the same */
+    /* create temporary file to ensure either all of the deleted_list is written or the file stays the same */
     if (!(temp = fopen(file, "wb"))) return -1;
 
-    /* WRITE A HEADER FOR THE INDEX FILE (?) */
+    if (fwrite(&strategy, sizeof(strategy), 1, temp) != 1) {
+        fclose(temp);
+        return ERR;
+    }
 
     for (k = 0 ; k < deletedlist->used ; k++) {
         if (fwrite(&(deletedlist->deleted[k].offset), sizeof(deletedlist->deleted[k].offset), 1, temp) != 1){

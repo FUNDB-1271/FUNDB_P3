@@ -19,7 +19,7 @@ int deletedlist_add(DeletedList *deletedlist, IndexBook *indexbook, int strategy
 
 int deletedlist_update(DeletedList *deletedlist, IndexBook *indexbook, int strategy, int command_code);
 
-int deletedlist_save(DeletedList *deletedlist, char *file);
+int deletedlist_save(DeletedList *deletedlist, char *file, int strategy);
 
 int deletedlist_find(DeletedList *deletedlist, size_t book_size, int strategy);
 

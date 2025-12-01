@@ -23,7 +23,7 @@ void command_add_interpret_exit(Book *book, int exit_code);
 
 int command_del(FILE *data_fp, Index *index, DeletedList *deletedlist, int strategy, int key);
 
-int command_exit(FILE *datafile, Index *index, char *filename_root, DeletedList *deletedlist, FILE *deletedfile);
+int command_exit(FILE *datafile, Index *index, char *filename_root, DeletedList *deletedlist, FILE *deletedfile, int strategy);
 
 int command_find(FILE *data_fp, Index *index, int key);
 
