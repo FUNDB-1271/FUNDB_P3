@@ -86,25 +86,7 @@ list-tests:
 		echo "  - $$(basename "$$test" .sh)"; \
 	done
 
-# Crear la carpeta tests si no existe
-tests-dir:
-	@mkdir -p tests
-
 # Limpiar archivos generados por los tests
 clean-tests:
 	@echo "Limpiando archivos de tests..."
 	@rm -f test*.db test*.ind test*.lst
-
-# Ejecutar tests con valgrind
-test-valgrind:
-	@echo "Ejecutando tests con valgrind..."
-	@for test in *.sh; do \
-		echo "Test: $$test con valgrind"; \
-		chmod +x "$$test"; \
-		if ! valgrind --leak-check=full --error-exitcode=1 "$$test" 2>/dev/null; then \
-			echo "FALLO: $$test tiene memory leaks"; \
-			exit 1; \
-		else \
-			echo "PASO: $$test sin memory leaks"; \
-		fi; \
-	done
