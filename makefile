@@ -47,12 +47,12 @@ test-all:
 	@echo "======================================"
 	@failed=0; \
 	total=0; \
-	for test in tests/*.sh; do \
+	for test in *.sh; do \
 		total=$$((total + 1)); \
 		echo "Ejecutando $$(basename "$$test")..."; \
 		chmod +x "$$test" 2>/dev/null; \
 		echo "--------------------------------------"; \
-		if timeout 30s "$$test"; then \
+		if timeout 30s expect -c "./$$test"; then \
 			echo "PASO: $$(basename "$$test")"; \
 		else \
 			echo "FALLO: $$(basename "$$test")"; \
@@ -70,19 +70,19 @@ test-all:
 
 # Regla para ejecutar un test específico
 test-%:
-	@if [ -f "tests/$*.sh" ]; then \
-		echo "Ejecutando tests/$*.sh"; \
-		chmod +x "tests/$*.sh"; \
-		"tests/$*.sh"; \
+	@if [ -f "$*.sh" ]; then \
+		echo "Ejecutando $*.sh"; \
+		chmod +x "$*.sh"; \
+		"$*.sh"; \
 	else \
-		echo "Error: Test tests/$*.sh no encontrado"; \
+		echo "Error: Test $*.sh no encontrado"; \
 		exit 1; \
 	fi
 
 # Regla para listar todos los tests disponibles
 list-tests:
 	@echo "Tests disponibles:"; \
-	for test in tests/*.sh; do \
+	for test in *.sh; do \
 		echo "  - $$(basename "$$test" .sh)"; \
 	done
 
@@ -98,7 +98,7 @@ clean-tests:
 # Ejecutar tests con valgrind
 test-valgrind:
 	@echo "Ejecutando tests con valgrind..."
-	@for test in tests/*.sh; do \
+	@for test in *.sh; do \
 		echo "Test: $$test con valgrind"; \
 		chmod +x "$$test"; \
 		if ! valgrind --leak-check=full --error-exitcode=1 "$$test" 2>/dev/null; then \
