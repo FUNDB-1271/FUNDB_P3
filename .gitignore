@@ -2,3 +2,8 @@
 *.o 
 library
 local.mk
+test.db
+test.ind
+test.lst
+index_load_test.c
+index_save_test.c
