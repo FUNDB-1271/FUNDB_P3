@@ -163,6 +163,7 @@ int deletedlist_del(DeletedList *deletedlist, IndexBook *indexbook, int strategy
         return OK;
     }
     else if (deletedlist->deleted[pos].register_size > indexbook_get_size(indexbook)){
+        deletedlist->deleted[pos].offset += indexbook_get_size(indexbook);
         deletedlist->deleted[pos].register_size -= indexbook_get_size(indexbook);
 
         return OK;
