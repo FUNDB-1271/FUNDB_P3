@@ -134,6 +134,9 @@ expect "    offset: #46"
 expect "    size: #73"
 expect "exit"
 
+send "exit\n"
+expect "all done"
+
 puts "1) Use deleted books OK, ;-)"
 
 # --- Start of Hard-Coded File Comparisons ---
