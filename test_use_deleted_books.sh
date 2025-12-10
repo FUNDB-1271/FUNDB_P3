@@ -10,9 +10,7 @@ set programName "library"
 set filename "test"
 set strategy "first_fit"
 # Set the base name for the control files
-set control_base "${filename}_use_deleted_books_control"
-# List of extensions to compare
-set extensions [list ".db" ".ind" ".lst"]
+set control_base "test_use_deleted_books_control"
 
 spawn rm -f $filename.db $filename.ind $filename.lst
 
@@ -61,24 +59,24 @@ expect "    size: #36"
 expect "exit"
 
 # create first fragmentation 
-send "del 12347\r"
+send "del 12347"
 expect "Record with BookID=12347 has been deleted"
 expect "exit"
 
 # print current holes
-send "printLst\n"
+send "printLst"
 expect "Entry #0"
 expect     "offset: #127"
 expect     "size: #122"
 expect "exit"
 
 # create second fragmentation 
-send "del 12345\r"
+send "del 12345"
 expect "Record with BookID=12345 has been deleted"
 expect "exit"
 
 # print current fragmentations
-send "printLst\n"
+send "printLst"
 expect "Entry #0"
 expect "    offset: #127"
 expect "    size: #122"
@@ -89,12 +87,12 @@ expect "exit"
 
 # add first book to fill the internal fragmentation - since this is a first_fit program
 # it will be added to the offset 127 hole. 
-send "add 12343|9-978-1234512345|movie|night\r"
+send "add 12343|9-978-1234512345|movie|night"
 expect "Record with BookID=12343 has been added to the database"
 expect "exit"
 
 # print updated lst
-send "printLst\n"
+send "printLst"
 expect "Entry #0"
 expect "    offset: #166"
 expect "    size: #83"
@@ -105,12 +103,12 @@ expect "exit"
 
 # create another book that will make the first hole be smaller than the minimum 
 # required size, therefore it will be deleted
-send "add 12342|9-978-2345623456|el quijote pero ahora en italiano|Catedrales y monu\r"
+send "add 12342|9-978-2345623456|el quijote pero ahora en italiano|Catedrales y monu"
 expect "Record with BookID=12342 has been added to the database"
 expect "exit"
 
 # current DB state 
-send "printInd\n"
+send "printInd"
 expect "Entry #0"
 expect "    key: #12342"
 expect "    offset: #166"
@@ -130,7 +128,7 @@ expect "    size: #36"
 expect "exit"
 
 # current lst struct, only one element
-send "printLst\n"
+send "printLst"
 expect "Entry #0"
 expect "    offset: #46"
 expect "    size: #73"
@@ -138,44 +136,47 @@ expect "exit"
 
 puts "1) Use deleted books OK, ;-)"
 
-set comparison_status "identical"
+# --- Start of Hard-Coded File Comparisons ---
 
-# Loop through the desired file extensions and compare
-foreach ext $extensions {
-    set test_file "$filename$ext"
-    set control_file "$control_base$ext"
-    
-    puts "3) Comparing $test_file with $control_file..."
-    
-    set output "differ"
-    
-    # Execute diff command and check the exit status using 'catch'
-    if {[catch {exec diff -s $test_file $control_file} output]} {
-        # diff returns non-zero status (1) if files differ
-        if {[regexp -nocase "(No such file or directory|cannot stat|No se encontró el archivo)" $output]} {
-            puts "   Comparison failed: $test_file or $control_file not found. :-("
-        } else {
-            # Files exist but differ
-            puts "   Files differ, :-("
-        }
-        set comparison_status "differ"
-    } else {
-        # diff returns zero status (0) if files are identical
-        if {[regexp -nocase "identical" $output] || [regexp -nocase "idénticos" $output]} {
-            puts "   Files are identical, ;-)"
-        } else {
-            # A safeguard for unexpected output when exit status is 0
-            puts "   Files differ (unexpected diff output), :-("
-            set comparison_status "differ"
-        }
-    }
-}
+# Compare .db file
+puts "3) Comparing $filename.db with ${control_base}.db..."
+set output_db "differ"
+try {
+    set output_db [exec diff -s $filename.db ${control_base}.db]
+} trap CHILDSTATUS {} {}
 
-# Final summary based on all comparisons
-if {[string equal $comparison_status "identical"]} {
-    puts "3) All files (.db, .ind, .lst) are identical, ;-)"
+if {[regexp -nocase "identical" $output_db] || [regexp -nocase "idénticos" $output_db]} {
+    puts "   Files $filename.db are identical, ;-)"
 } else {
-    puts "3) At least one file differs, :-("
+    puts "   Files $filename.db differ, :-("
 }
+
+# Compare .ind file
+puts "3) Comparing $filename.ind with ${control_base}.ind..."
+set output_ind "differ"
+try {
+    set output_ind [exec diff -s $filename.ind ${control_base}.ind]
+} trap CHILDSTATUS {} {}
+
+if {[regexp -nocase "identical" $output_ind] || [regexp -nocase "idénticos" $output_ind]} {
+    puts "   Files $filename.ind are identical, ;-)"
+} else {
+    puts "   Files $filename.ind differ, :-("
+}
+
+# Compare .lst file
+puts "3) Comparing $filename.lst with ${control_base}.lst..."
+set output_lst "differ"
+try {
+    set output_lst [exec diff -s $filename.lst ${control_base}.lst]
+} trap CHILDSTATUS {} {}
+
+if {[regexp -nocase "identical" $output_lst] || [regexp -nocase "idénticos" $output_lst]} {
+    puts "   Files $filename.lst are identical, ;-)"
+} else {
+    puts "   Files $filename.lst differ, :-("
+}
+
+# --- End of Hard-Coded File Comparisons ---
 
 puts "4) Script end"
