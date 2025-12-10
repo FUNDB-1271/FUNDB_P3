@@ -30,7 +30,7 @@ int _library_init(char *dbname, char *strategy, DBInfo *database);
 
 void _library_cleanup(DBInfo **database);
 
-void loop();
+void loop(DBInfo *database);
 
 int main(int argc, char *argv[]) {
     DBInfo *database = NULL;

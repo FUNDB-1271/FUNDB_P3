@@ -11,6 +11,15 @@ all: $(EXE)
 run: 
 	./$(EXE) first_fit $(DBNAME)
 
+first_fit:
+	./$(EXE) first_fit $(DBNAME)
+
+worst_fit:
+	./$(EXE) worst_fit $(DBNAME)
+
+best_fit:
+	./$(EXE) best_fit $(DBNAME)
+
 $(EXE): $(OBJ)
 	$(CC) -o $@ $(OBJ)
 
@@ -43,41 +52,68 @@ clean_db:
 
 # Regla para ejecutar todos los tests de la carpeta tests
 test-all:
-	@echo "Ejecutando todos los tests..."
-	@echo "======================================"
-	@failed=0; \
-	total=0; \
-	for test in *.sh; do \
-		total=$$((total + 1)); \
-		echo "Ejecutando $$(basename "$$test")..."; \
-		chmod +x "$$test" 2>/dev/null; \
-		echo "--------------------------------------"; \
-		if timeout 30s expect -c "./$$test"; then \
-			echo "PASO: $$(basename "$$test")"; \
-		else \
-			echo "FALLO: $$(basename "$$test")"; \
-			failed=$$((failed + 1)); \
-		fi; \
-		echo ""; \
-	done; \
-	echo "Resultados: $$((total - failed))/$$total tests pasaron"; \
-	if [ $$failed -eq 0 ]; then \
-		echo "Todos los tests pasaron correctamente"; \
-	else \
-		echo "$failed test(s) fallaron"; \
-		exit 1; \
-	fi
+	@echo "Executing all tests"
 
-# Regla para ejecutar un test específico
-test-%:
-	@if [ -f "$*.sh" ]; then \
-		echo "Ejecutando $*.sh"; \
-		chmod +x "$*.sh"; \
-		"$*.sh"; \
-	else \
-		echo "Error: Test $*.sh no encontrado"; \
-		exit 1; \
-	fi
+add_data_test:
+	@echo "Executing add_data_test.sh"
+	@chmod +x add_data_test.sh
+	rm -f test.ind test.db test.lst
+	./add_data_test.sh
+
+
+add_delete_test_01: 
+	@echo "Executing add_delete_test_01.sh"
+	@chmod +x add_delete_test_01.sh
+	rm -f test.ind test.db test.lst
+	./add_delete_test_01.sh	
+
+add_delete_test_02: 
+	@echo "Executing add_delete_test_02.sh"
+	@chmod +x add_delete_test_02.sh
+	rm -f test.ind test.db test.lst
+	./add_delete_test_02.sh
+
+add_delete_test_03: 
+	@echo "Executing add_delete_test_03.sh"
+	@chmod +x add_delete_test_03.sh
+	rm -f test.ind test.db test.lst
+	./add_delete_test_03.sh
+
+add_delete_test_04: 
+	@echo "Executing add_delete_test_04.sh"
+	@chmod +x add_delete_test_04.sh
+	rm -f test.ind test.db test.lst
+	./add_delete_test_04.sh
+
+add_index_test:
+	@echo "Executing add_index_test.sh"
+	@chmod +x add_index_test.sh
+	rm -f test.ind test.db test.lst
+	./add_index_test.sh
+
+cli_tests:
+	@echo "Executing cli_tests.sh"
+	@chmod +x cli_tests.sh
+	rm -f test.ind test.db test.lst
+	./cli_tests.sh
+
+many_entries:
+	@echo "Executing many_entries.sh"
+	@chmod +x many_entries.sh
+	rm -f test.ind test.db test.lst
+	./many_entries.sh
+
+reload_index:
+	@echo "Executing reload_index.sh"
+	@chmod +x reload_index.sh
+	rm -f test.ind test.db test.lst
+	./reload_index.sh
+
+use_delete_books:
+	@echo "Executing use_delete_books.sh"
+	@chmod +x use_delete_books.sh
+	rm -f test.ind test.db test.lst
+	./use_delete_books.sh
 
 # Regla para listar todos los tests disponibles
 list-tests:

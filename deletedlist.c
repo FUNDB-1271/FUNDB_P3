@@ -360,8 +360,17 @@ int deletedlist_save(DeletedList *deletedlist, char *file, int strategy) {
 
 DeletedList *deletedlist_init_from_file(FILE *deletedlist_fp) {
     DeletedList *deletedlist = NULL;
+    int strategy_header; // Variable to read the sorting strategy header.
 
     if (!deletedlist_fp) return NULL;
+
+    /* Read the sorting strategy header (an int) */
+    if (fread(&strategy_header, sizeof(int), 1, deletedlist_fp) != 1) {
+        if (feof(deletedlist_fp)) {
+            return deletedlist_init();
+        }
+        return NULL;
+    }
 
     deletedlist = deletedlist_init();
     if (deletedlist == NULL){
@@ -397,14 +406,12 @@ DeletedList *deletedlist_init_from_file(FILE *deletedlist_fp) {
         }
 
         if (indexdeletedbook_set_offset(&deletedlist->deleted[deletedlist->used], offset) == ERR){
-            if (deletedlist_fp) fclose(deletedlist_fp);
-            if (deletedlist) deletedlist_free(deletedlist);
+            deletedlist_free(deletedlist);
             return NULL;
         }
 
         if (indexdeletedbook_set_register_size(&deletedlist->deleted[deletedlist->used], register_size) == ERR){
-            if (deletedlist_fp) fclose(deletedlist_fp);
-            if (deletedlist) deletedlist_free(deletedlist);
+            deletedlist_free(deletedlist);
             return NULL;
         }
         deletedlist->used++;
