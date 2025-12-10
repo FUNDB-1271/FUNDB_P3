@@ -61,24 +61,24 @@ expect "    size: #36"
 expect "exit"
 
 # create first fragmentation 
-send "del 12347"
+send "del 12347\r"
 expect "Record with BookID=12347 has been deleted"
 expect "exit"
 
 # print current holes
-send "printLst"
+send "printLst\n"
 expect "Entry #0"
 expect     "offset: #127"
 expect     "size: #122"
 expect "exit"
 
 # create second fragmentation 
-send "del 12345"
+send "del 12345\r"
 expect "Record with BookID=12345 has been deleted"
 expect "exit"
 
 # print current fragmentations
-send "printLst"
+send "printLst\n"
 expect "Entry #0"
 expect "    offset: #127"
 expect "    size: #122"
@@ -89,12 +89,12 @@ expect "exit"
 
 # add first book to fill the internal fragmentation - since this is a first_fit program
 # it will be added to the offset 127 hole. 
-send "add 12343|9-978-1234512345|movie|night"
+send "add 12343|9-978-1234512345|movie|night\r"
 expect "Record with BookID=12343 has been added to the database"
 expect "exit"
 
 # print updated lst
-send "printLst"
+send "printLst\n"
 expect "Entry #0"
 expect "    offset: #166"
 expect "    size: #83"
@@ -105,12 +105,12 @@ expect "exit"
 
 # create another book that will make the first hole be smaller than the minimum 
 # required size, therefore it will be deleted
-send "add 12342|9-978-2345623456|el quijote pero ahora en italiano|Catedrales y monu"
+send "add 12342|9-978-2345623456|el quijote pero ahora en italiano|Catedrales y monu\r"
 expect "Record with BookID=12342 has been added to the database"
 expect "exit"
 
 # current DB state 
-send "printInd"
+send "printInd\n"
 expect "Entry #0"
 expect "    key: #12342"
 expect "    offset: #166"
@@ -130,7 +130,7 @@ expect "    size: #36"
 expect "exit"
 
 # current lst struct, only one element
-send "printLst"
+send "printLst\n"
 expect "Entry #0"
 expect "    offset: #46"
 expect "    size: #73"
