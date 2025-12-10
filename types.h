@@ -14,6 +14,9 @@
 #define MAX_PUBLISHEDBY 128
 #define MAX_ISBN 16
 
+#define SIZE_T_SIZE 8
+#define MIN_REG_SIZE SIZE_T_SIZE + 1
+
 typedef enum {false, true} Bool;
 
 typedef enum {NoError = 1, UknError, BookExists, WriteError, MemError} AddErrors;

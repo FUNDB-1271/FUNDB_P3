@@ -6,6 +6,7 @@
 #include <ctype.h>
 
 char *cmd_to_str[N_CMD + 1] = {"No command", "Unknown", "add", "find", "del", "exit", "printRec", "printInd", "printLst"};
+
 /**
  * @brief private function for fetching command code
  * 
@@ -21,7 +22,7 @@ CommandCode command_code_from_string(const char *str)
             continue;
 
         if (strcasecmp(str, cmd_to_str[i]) == 0) {
-            return (CommandCode)i;   // index matches enum value
+            return (CommandCode)i;
         }
     }
 
@@ -138,39 +139,62 @@ int command_execute(FILE *datafile, Index *index, FILE *indexfile, DeletedList *
 int command_add(FILE *data_fp, Index *index, DeletedList *deletedlist, Book *book, int strategy) {
     long int index_pos = NO_POS;
     long offset = NO_POS;
-    long write_pos;  // Añadir para guardar la posición real
+    long write_pos;
     int ret = OK;
     IndexBook *indexbook = NULL;
+    size_t book_size;
 
     if (!book || !data_fp || !index || (strategy != BESTFIT && strategy != WORSTFIT && strategy != FIRSTFIT) || !deletedlist) return ERR;
 
+    book_size = book_get_total_size(book);
     
-    if (!(indexbook = indexbook_init(book_get_id(book), 0, book_get_total_size(book)))) return MemError;
+    if (!(indexbook = indexbook_init(book_get_id(book), 0, book_size))) return MemError;
 
     ret = index_find(index, book_get_id(book));
-    if (ret != NOT_FOUND) return BookExists;
+    if (ret != NOT_FOUND) {
+        indexbook_free(indexbook);
+        return BookExists;
+    }
 
-    index_pos = deletedlist_find(deletedlist, book_get_total_size(book), strategy);
-    if (index_pos == ERR) return ERR;
+    /* Search for a suitable deleted space */
+    index_pos = deletedlist_find(deletedlist, book_size, strategy);
+    if (index_pos == ERR) {
+        indexbook_free(indexbook);
+        return ERR;
+    }
 
+    /* If a suitable space was found, use it */
     if (index_pos != NO_POS && index_pos != NOT_FOUND){
         offset = (long)deletedlist_get_offset(deletedlist, index_pos);
     }
 
-    // Guardar la posición real de escritura
-    write_pos = database_add(data_fp, offset, book_get_id(book), book_get_title(book), book_get_isbn(book), book_get_publishedby(book));
-    if (write_pos == ERR) return WriteError;
+    /* Write the book to the database (either at offset or at end) */
+    write_pos = database_add(data_fp, offset, book_get_id(book), book_get_title(book), 
+                              book_get_isbn(book), book_get_publishedby(book));
+    if (write_pos == ERR) {
+        indexbook_free(indexbook);
+        return WriteError;
+    }
 
-    // Usar la posición REAL, no el offset que pasamos
+    /* Update the indexbook with the actual write position */
     if (indexbook_set_offset(indexbook, write_pos) == ERR){
+        indexbook_free(indexbook);
         return ERR;
     }
 
+    /* Update deleted list - this will remove or update the used space */
     ret = deletedlist_update(deletedlist, indexbook, strategy, ADD);
-    if (ret == ERR) return ERR;
+    if (ret == ERR) {
+        indexbook_free(indexbook);
+        return ERR;
+    }
 
+    /* Add to index */
     ret = index_add(index, indexbook);
-    if (ret != OK) return MemError;
+    if (ret != OK) {
+        indexbook_free(indexbook);
+        return MemError;
+    }
 
     fflush(data_fp);
     return NoError;
@@ -185,7 +209,7 @@ int command_del(FILE *data_fp, Index *index, DeletedList *deletedlist, int strat
 
     pos = index_find(index, key);
     if (pos == NOT_FOUND){
-        printf ("Item with key %d does not exist\n", key);
+        printf("Record with bookId=%d does not exist\n", key);
         return NOT_FOUND;
     }
 

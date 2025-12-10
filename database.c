@@ -7,13 +7,8 @@
 long database_add(FILE *database_f, long offset, int book_id, const char *title, const char *isbn, const char *publisher) {
     size_t title_length, publisher_length, total_length;
     char isbn_cpy[MAX_ISBN], a = '|';
-    long chosen_pos, file_size, write_pos;  // Añadir write_pos
-    int need_restore = 0;
+    long chosen_pos, file_size, write_pos;
     size_t copy_length = 0;
-
-    size_t data_size = 0;
-    char aux[MAX_INPUT];
-    long original_backup_pos = 0;
 
     if (!database_f || !title || !isbn || !publisher) return ERR;
 
@@ -23,33 +18,14 @@ long database_add(FILE *database_f, long offset, int book_id, const char *title,
 
     /* decide write position */
     if (offset == NO_POS) {
-        chosen_pos = file_size; /* append */
+        chosen_pos = file_size; /* append at end */
     } else {
-        /* clamp offset to file end if it's beyond EOF */
-        chosen_pos = (offset > file_size) ? file_size : offset;
+        /* use the provided offset for reusing deleted space */
+        chosen_pos = offset;
     }
 
-    // Guardar la posición real donde vamos a escribir
+    /* Save the actual write position */
     write_pos = chosen_pos;
-
-    if (chosen_pos < file_size) {
-        if (fseek(database_f, chosen_pos, SEEK_SET) != 0) return ERR;
-
-        /* read existing record length */
-        if (fread(&data_size, sizeof(size_t), 1, database_f) != 1) return ERR;
-
-        /* Verificar que data_size no exceda MAX_INPUT */
-        if (data_size > MAX_INPUT || data_size < sizeof(int)) return ERR;
-        
-        /* Leer solo los datos (excluyendo el size_t) */
-        if (fread(aux, sizeof(char), data_size, database_f) != data_size) return ERR;
-        
-        need_restore = 1;
-        original_backup_pos = chosen_pos;
-    } else {
-        /* no existing data to back up (appending at EOF or file empty) */
-        data_size = 0;
-    }
 
     /** compute length of fields*/
     title_length = strlen(title) < MAX_TITLE ? strlen(title) : MAX_TITLE;
@@ -61,35 +37,23 @@ long database_add(FILE *database_f, long offset, int book_id, const char *title,
     copy_length = strlen(isbn);    
     if (copy_length > MAX_ISBN) copy_length = MAX_ISBN;
 
-    /* fill with spaces or zeros to pad to MAX_ISBN */
+    /* fill with zeros to pad to MAX_ISBN */
     memset(isbn_cpy, '\0', MAX_ISBN);
     memcpy(isbn_cpy, isbn, copy_length);
 
-    /* Posicionar para escritura */
+    /* Position for writing */
     if (fseek(database_f, chosen_pos, SEEK_SET) != 0) return ERR;
 
-    /* Escribir nuevo registro */
-    if (fwrite(&total_length, sizeof(size_t), 1, database_f) != 1) goto restore;
-    if (fwrite(&book_id, sizeof(int), 1, database_f) != 1) goto restore;
-    if (fwrite(isbn_cpy, sizeof(char), MAX_ISBN, database_f) != MAX_ISBN) goto restore;
-    if (fwrite(title, sizeof(char), title_length, database_f) != title_length) goto restore;
-    if (fwrite(&a, sizeof(char), 1, database_f) != 1) goto restore;
-    if (fwrite(publisher, sizeof(char), publisher_length, database_f) != publisher_length) goto restore;
+    /* Write new record */
+    if (fwrite(&total_length, sizeof(size_t), 1, database_f) != 1) return ERR;
+    if (fwrite(&book_id, sizeof(int), 1, database_f) != 1) return ERR;
+    if (fwrite(isbn_cpy, sizeof(char), MAX_ISBN, database_f) != MAX_ISBN) return ERR;
+    if (fwrite(title, sizeof(char), title_length, database_f) != title_length) return ERR;
+    if (fwrite(&a, sizeof(char), 1, database_f) != 1) return ERR;
+    if (fwrite(publisher, sizeof(char), publisher_length, database_f) != publisher_length) return ERR;
 
     fflush(database_f);
-    return write_pos;  // Retornar la posición real de escritura
-
-restore:
-{
-    if (need_restore) {
-        if (fseek(database_f, original_backup_pos, SEEK_SET) != 0) return ERR;
-        if (fwrite(&data_size, sizeof(size_t), 1, database_f) != 1) return ERR;
-        if (fwrite(aux, sizeof(char), data_size, database_f) != data_size) return ERR;
-        
-        fflush(database_f);
-    }
-    return ERR;
-}
+    return write_pos;  /* Return actual write position */
 }
 
 int database_del(FILE *database_f, Index *ind, DeletedList *deletedList, IndexBook *indexbook){
@@ -100,14 +64,14 @@ int database_del(FILE *database_f, Index *ind, DeletedList *deletedList, IndexBo
         return ERR;
     } 
 
-    /* Obtener offset y tamaño del registro */
+    /* Get offset and size of the record */
     offset = indexbook_get_offset(indexbook);
     size   = indexbook_get_size(indexbook);
     
     if (offset < 0 || size == 0)
         return ERR;
 
-    /* Ir al comienzo del registro */
+    /* Position at the beginning of the record */
     if (fseek(database_f, offset, SEEK_SET) != 0) {
         return ERR;
     }
@@ -135,7 +99,7 @@ int database_find(FILE *fdb, Index *ind, int key){
         return ERR;
     }
     else if (pos == NOT_FOUND){
-        printf("Item with key %d does not exist\n", key);
+        printf("Record with bookId=%d does not exist\n", key);
         return NOT_FOUND;
     }
 
@@ -143,20 +107,20 @@ int database_find(FILE *fdb, Index *ind, int key){
         return ERR;
     }
 
-    // Leer size_t total_length
+    /* Read size_t total_length */
     if (fread(&total_length, sizeof(size_t), 1, fdb) != 1)
         return ERR;
     
-    // Leer book_id
+    /* Read book_id */
     if (fread(&book_id, sizeof(int), 1, fdb) != 1)
         return ERR;
     
-    // Leer ISBN
+    /* Read ISBN */
     if (fread(isbn, sizeof(char), MAX_ISBN, fdb) != MAX_ISBN)
         return ERR;
-    isbn[MAX_ISBN] = '\0'; // Null-terminate
+    isbn[MAX_ISBN] = '\0';
     
-    // El resto del registro son title + '|' + publisher
+    /* Rest of record is title + '|' + publisher */
     size_t remaining_size = total_length - sizeof(int) - MAX_ISBN;
     buffer = malloc(remaining_size + 1);
     if (buffer == NULL){
@@ -167,21 +131,21 @@ int database_find(FILE *fdb, Index *ind, int key){
         free(buffer);
         return ERR;
     }
-    buffer[remaining_size] = '\0'; // Null-terminate
+    buffer[remaining_size] = '\0';
     
-    // Encontrar el separador '|'
+    /* Find separator '|' */
     separator_ptr = memchr(buffer, '|', remaining_size);
     if (separator_ptr == NULL) {
         free(buffer);
         return ERR;
     }
     
-    // Separar title y publisher
-    *separator_ptr = '\0'; // Reemplazar '|' con null terminator
+    /* Separate title and publisher */
+    *separator_ptr = '\0';
     title_ptr = buffer;
     publisher_ptr = separator_ptr + 1;
     
-    // Imprimir en el formato: book_id|isbn|title|publisher
+    /* Print in format: book_id|isbn|title|publisher */
     printf("%d|%s|%s|%s\n", book_id, isbn, title_ptr, publisher_ptr);
     
     free(buffer);
@@ -206,31 +170,31 @@ int database_print_rec(FILE *database_f, Index *index){
     }
 
     for (i = 0; i < index_get_used(index); i++){
-        // Obtener el libro del índice en posición i
+        /* Get book from index at position i */
         indexbook = index_get_indexbook(index, i);
         if (indexbook == NULL) {
-            continue; // Saltar si no hay libro
+            continue;
         }
 
-        // Ir a la posición del registro en el archivo
+        /* Go to record position in file */
         if (fseek(database_f, indexbook_get_offset(indexbook), SEEK_SET) != 0) {
             return ERR;
         }
 
-        // Leer size_t total_length
+        /* Read size_t total_length */
         if (fread(&total_length, sizeof(size_t), 1, database_f) != 1)
             return ERR;
         
-        // Leer book_id
+        /* Read book_id */
         if (fread(&book_id, sizeof(int), 1, database_f) != 1)
             return ERR;
         
-        // Leer ISBN
+        /* Read ISBN */
         if (fread(isbn, sizeof(char), MAX_ISBN, database_f) != MAX_ISBN)
             return ERR;
-        isbn[MAX_ISBN] = '\0'; // Null-terminate
+        isbn[MAX_ISBN] = '\0';
         
-        // El resto del registro son title + '|' + publisher
+        /* Rest of record is title + '|' + publisher */
         size_t remaining_size = total_length - sizeof(int) - MAX_ISBN;
         buffer = malloc(remaining_size + 1);
         if (buffer == NULL){
@@ -241,21 +205,21 @@ int database_print_rec(FILE *database_f, Index *index){
             free(buffer);
             return ERR;
         }
-        buffer[remaining_size] = '\0'; // Null-terminate
+        buffer[remaining_size] = '\0';
         
-        // Encontrar el separador '|'
+        /* Find separator '|' */
         separator_ptr = memchr(buffer, '|', remaining_size);
         if (separator_ptr == NULL) {
             free(buffer);
             return ERR;
         }
         
-        // Separar title y publisher
-        *separator_ptr = '\0'; // Reemplazar '|' con null terminator
+        /* Separate title and publisher */
+        *separator_ptr = '\0';
         char *title_ptr = buffer;
         char *publisher_ptr = separator_ptr + 1;
         
-        // Imprimir en el formato: book_id|isbn|title|publisher
+        /* Print in format: book_id|isbn|title|publisher */
         printf("%d|%s|%s|%s\n", book_id, isbn, title_ptr, publisher_ptr);
         
         free(buffer);
@@ -264,5 +228,19 @@ int database_print_rec(FILE *database_f, Index *index){
     return OK;
 }
 
+int database_print_size(FILE *fdb, size_t size, long offset)
+{
+    long aux = 0;
 
+    if (!fdb || offset < 0 || size < 0) return ERR;
 
+    if ((aux = (long) fseek(fdb, 0, SEEK_END)) != 0) return ERR;
+
+    if (offset > aux) return ERR;
+
+    if ((aux = (long) fseek(fdb, 0, offset) != 0)) return ERR;
+
+    if (fwrite(&size, sizeof(size_t), 1, fdb) != 1) return ERR;
+
+    return OK;
+}

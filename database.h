@@ -10,6 +10,8 @@ int database_find(FILE *fdb, Index *ind, int key);
 
 int database_del(FILE *database_f, Index *ind, DeletedList *deletedList, IndexBook *indexbook);
 
+int database_print_size(FILE *fdb, size_t size, long offset);
+
 int database_exit(/* ... */);
 
 int database_print_rec(/* ... */);

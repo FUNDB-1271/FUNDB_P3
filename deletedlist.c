@@ -141,37 +141,88 @@ int deletedlist_add(DeletedList *deletedlist, IndexBook *indexbook, int strategy
 
 int deletedlist_del(DeletedList *deletedlist, IndexBook *indexbook, int strategy){
     int i, pos;
+    size_t remaining_space;
+    size_t new_record_size;
+    
+    /* Minimum size for a useful remaining hole: SIZE_T_SIZE + 1 */
+    const size_t MIN_HOLE_SIZE = sizeof(size_t) + 1; 
 
     if (deletedlist == NULL || indexbook == NULL){
         return ERR;
     }
 
-    pos = deletedlist_find(deletedlist, indexbook_get_size(indexbook), strategy);
+    new_record_size = indexbook_get_size(indexbook);
+
+    pos = deletedlist_find(deletedlist, new_record_size, strategy);
     if (pos == ERR){
         return ERR;
     }
-    else if (pos == NO_POS){
+    else if (pos == NO_POS || pos == NOT_FOUND){
+        /* No suitable space found, no problem - will append at end */
         return NO_POS;
     }
     
-    if (deletedlist->deleted[pos].register_size == indexbook_get_size(indexbook)){
+    /* Calculate remaining space: deleted_size - (SIZE_T_SIZE + new_record_size) */
+    /* The deleted slot size already includes the original size_t field.
+       The new record uses its book_size (R_new) PLUS a new size_t field. */
+    if (deletedlist->deleted[pos].register_size < (sizeof(size_t) + new_record_size)){
+        /* If the size check in deletedlist_find was correct, this branch is defensive */
+        remaining_space = 0; 
+    } else {
+        remaining_space = deletedlist->deleted[pos].register_size - (sizeof(size_t) + new_record_size);
+    }
+    
+    /* If the remaining space is too small to be a useful hole, remove the entry */
+    if (remaining_space < MIN_HOLE_SIZE) {
         for (i = pos; i < deletedlist->used-1; i++){
             deletedlist->deleted[i] = deletedlist->deleted[i+1];
         }
-
         deletedlist->used--;
         return OK;
     }
-    else if (deletedlist->deleted[pos].register_size > indexbook_get_size(indexbook)){
-        deletedlist->deleted[pos].offset += indexbook_get_size(indexbook);
-        deletedlist->deleted[pos].register_size -= indexbook_get_size(indexbook);
-
+    else { 
+        /* Update offset to point after the newly written record */
+        deletedlist->deleted[pos].offset += sizeof(size_t) + new_record_size;
+        deletedlist->deleted[pos].register_size = remaining_space;
+        
+        /* If using BESTFIT or WORSTFIT, we may need to re-sort this entry */
+        if (strategy != FIRSTFIT) {
+            IndexDeletedBook temp = deletedlist->deleted[pos];
+            
+            /* Remove from current position */
+            for (i = pos; i < deletedlist->used - 1; i++){
+                deletedlist->deleted[i] = deletedlist->deleted[i+1];
+            }
+            
+            /* Find new position based on strategy */
+            int new_pos = 0;
+            if (strategy == BESTFIT){
+                while (new_pos < deletedlist->used - 1 && 
+                       deletedlist->deleted[new_pos].register_size < temp.register_size){
+                    new_pos++;
+                }
+            }
+            else if (strategy == WORSTFIT){
+                while (new_pos < deletedlist->used - 1 && 
+                       deletedlist->deleted[new_pos].register_size > temp.register_size){
+                    new_pos++;
+                }
+            }
+            
+            /* Shift to make room */
+            for (i = deletedlist->used - 1; i > new_pos; i--){
+                deletedlist->deleted[i] = deletedlist->deleted[i-1];
+            }
+            
+            /* Insert at new position */
+            deletedlist->deleted[new_pos] = temp;
+        }
+        
         return OK;
     }
 
     return ERR;
 }
-
 
 int deletedlist_update(DeletedList *deletedlist, IndexBook *indexbook, int strategy, int command_code){
     if (deletedlist == NULL || command_code == NO_CMD){
@@ -179,11 +230,13 @@ int deletedlist_update(DeletedList *deletedlist, IndexBook *indexbook, int strat
     }
     
     if(command_code == ADD){
+        /* When adding, try to use a deleted space */
         if (deletedlist_del(deletedlist, indexbook, strategy) == ERR){
             return ERR;
         }
     }
     else if(command_code == DEL){
+        /* When deleting, add the space to deleted list */
         if (deletedlist_add(deletedlist, indexbook, strategy) == ERR){
             return ERR;
         }
@@ -200,8 +253,11 @@ int deletedlist_findbestfit(DeletedList *deletedlist, size_t book_size){
         return ERR;
     }
 
+    /* We need space for the book_size plus the size_t length field */
+    size_t required_size = book_size + sizeof(size_t); 
+
     for (i = 0; i < deletedlist->used; i++){
-        if (deletedlist->deleted[i].register_size >= book_size){
+        if (deletedlist->deleted[i].register_size >= required_size){
             if (min > deletedlist->deleted[i].register_size || min == 0){
                 pos = i;
                 min = deletedlist->deleted[i].register_size;
@@ -219,9 +275,12 @@ int deletedlist_findworstfit(DeletedList *deletedlist, size_t book_size){
     if (deletedlist == NULL || deletedlist->deleted == NULL){
         return -1;
     }
+    
+    /* We need space for the book_size plus the size_t length field */
+    size_t required_size = book_size + sizeof(size_t); 
 
     for (i = 0; i < deletedlist->used; i++){
-        if (deletedlist->deleted[i].register_size >= book_size){
+        if (deletedlist->deleted[i].register_size >= required_size){
             if (max < deletedlist->deleted[i].register_size || max == 0){
                 pos = i;
                 max = deletedlist->deleted[i].register_size;
@@ -238,9 +297,12 @@ int deletedlist_findfirstfit(DeletedList *deletedlist, size_t book_size){
     if (deletedlist == NULL || deletedlist->deleted == NULL){
         return ERR;
     }
+    
+    /* We need space for the book_size plus the size_t length field */
+    size_t required_size = book_size + sizeof(size_t); 
 
     for (i = 0; i < deletedlist->used; i++){
-        if (deletedlist->deleted[i].register_size >= book_size){
+        if (deletedlist->deleted[i].register_size >= required_size){
             return i;
         }
     }
@@ -272,7 +334,6 @@ int deletedlist_save(DeletedList *deletedlist, char *file, int strategy) {
 
     if (!deletedlist || !deletedlist->deleted || !file) return ERR;
 
-    /* create temporary file to ensure either all of the deleted_list is written or the file stays the same */
     if (!(temp = fopen(file, "wb"))) return -1;
 
     if (fwrite(&strategy, sizeof(strategy), 1, temp) != 1) {
@@ -312,23 +373,17 @@ DeletedList *deletedlist_init_from_file(FILE *deletedlist_fp) {
         long int offset; 
         size_t register_size;
 
-        /* lectura binaria del offset */
         if (fread(&offset, sizeof(offset), 1, deletedlist_fp) != 1) {
-            /* EOF -> terminado correctamente */
             if (feof(deletedlist_fp)) break;
-            /* lectura parcial / error de lectura -> cleanup y fallo */
             deletedlist_free(deletedlist);
             return NULL;
         }
 
-        /* lectura binaria del register_size */
         if (fread(&register_size, sizeof(register_size), 1, deletedlist_fp) != 1) {
-            /* lectura parcial -> cleanup y fallo */
             deletedlist_free(deletedlist);
             return NULL;
         }
 
-        /* expandir array si es necesario */
         if (deletedlist->size == deletedlist->used) {
             int new_size = deletedlist->size * 2;
             if (new_size == 0) new_size = DELETEDLIST_INIT_SIZE;
@@ -341,7 +396,6 @@ DeletedList *deletedlist_init_from_file(FILE *deletedlist_fp) {
             deletedlist->size = new_size;
         }
 
-        /* almacenar la entrada leída */
         if (indexdeletedbook_set_offset(&deletedlist->deleted[deletedlist->used], offset) == ERR){
             if (deletedlist_fp) fclose(deletedlist_fp);
             if (deletedlist) deletedlist_free(deletedlist);
@@ -359,7 +413,6 @@ DeletedList *deletedlist_init_from_file(FILE *deletedlist_fp) {
     return deletedlist;
 }
 
-
 void deletedlist_print(DeletedList *deletedList) {
     int i;
     if (deletedList == NULL || deletedList->deleted == NULL) return;
@@ -369,4 +422,13 @@ void deletedlist_print(DeletedList *deletedList) {
         fprintf(stdout, "    offset: #%ld\n", deletedList->deleted[i].offset);
         fprintf(stdout, "    size: #%ld\n", deletedList->deleted[i].register_size);        
     }   
+}
+
+size_t deletedlist_get_size(DeletedList *deletedlist, int pos)
+{
+    if (deletedlist == NULL){
+        return 0;
+    }    
+
+    return deletedlist->deleted[pos].register_size;
 }

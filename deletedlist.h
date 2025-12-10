@@ -15,6 +15,8 @@ void deletedlist_free(DeletedList *deletedlist);
 
 size_t deletedlist_get_offset(DeletedList *deletedlist, int pos);
 
+size_t deletedlist_get_size(DeletedList *deletedlist, int pos);
+
 int deletedlist_add(DeletedList *deletedlist, IndexBook *indexbook, int strategy);
 
 int deletedlist_update(DeletedList *deletedlist, IndexBook *indexbook, int strategy, int command_code);
