@@ -9,7 +9,6 @@
 #define DELETEDLIST_H
 
 #include "index.h"
-#include "commands.h"
 
 #define DELETEDLIST_INIT_SIZE 4
 

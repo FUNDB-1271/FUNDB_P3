@@ -5,6 +5,8 @@
  ******************************************************************************/
 
 #include "deletedlist.h"
+#include "commands.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 
