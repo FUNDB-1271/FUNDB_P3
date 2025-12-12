@@ -125,9 +125,11 @@ many_entries:
 reload_index:
 	@echo "Executing reload_index.sh"
 	@chmod +x reload_index.sh
+	@chmod +x add_index_test.sh
 	rm -f test.ind test.db test.lst
 	./reload_index.sh
 	@chmod -x reload_index.sh
+	@chmod -x add_index_test.sh
 
 use_deleted_books:
 	@echo "Executing test_use_deleted_books.sh"
