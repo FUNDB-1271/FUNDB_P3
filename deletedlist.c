@@ -1,3 +1,9 @@
+/******************************************************************************
+ * Autores: Marco Manceñido y Guilherme Povedano
+ * Descripción:
+ *      Implementación del módulo deletedlist e indexdeletedbook. 
+ ******************************************************************************/
+
 #include "deletedlist.h"
 #include <stdio.h>
 #include <stdlib.h>

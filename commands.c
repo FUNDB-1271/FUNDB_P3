@@ -1,3 +1,11 @@
+/******************************************************************************
+ * Autores: Marco Manceñido y Guilherme Povedano
+ * Descripción:
+ *      Implementación de funciones para parsear y ejecutar comandos de la 
+ *      CLI de la base de datos. Permite interpretar las entradas del usuario,
+ *      realizar operaciones sobre la base de datos, índice y lista de huecos.
+ ******************************************************************************/
+
 #include "commands.h"
 
 #include <stdio.h>
@@ -5,16 +13,22 @@
 #include <string.h>
 #include <ctype.h>
 
+/******************************************************************************
+ * Autores: Marco Manceñido y Guilherme Povedano
+ * Descripción:
+ *      Array de strings con los nombres de los comandos reconocidos.
+ ******************************************************************************/
 char *cmd_to_str[N_CMD + 1] = {"No command", "Unknown", "add", "find", "del", "exit", "printRec", "printInd", "printLst"};
 
-/**
- * @brief private function for fetching command code
- * 
- * @author Guilherme 
- * @date 26-11-2025
- * @param str user input in cli that is being parsed
- * @return corresponding code or unknown
-*/
+/******************************************************************************
+ * Autores: Marco Manceñido y Guilherme Povedano
+ * Descripción:
+ *      Convierte un string a su código de comando correspondiente.
+ * Parámetros:
+ *      str - comando en formato string introducido por el usuario
+ * Retorno:
+ *      Código de comando (CommandCode), UNKNOWN si no coincide
+ ******************************************************************************/
 CommandCode command_code_from_string(const char *str)
 {
     for (int i = 0; i <= N_CMD; i++) {
@@ -29,6 +43,17 @@ CommandCode command_code_from_string(const char *str)
     return UNKNOWN;
 }
 
+/******************************************************************************
+ * Autores: Marco Manceñido y Guilherme Povedano
+ * Descripción:
+ *      Parsea la entrada del usuario y genera un struct Book con los campos 
+ *      proporcionados, según el comando.
+ * Parámetros:
+ *      input        - string de entrada del usuario
+ *      command_code - puntero donde se guardará el código de comando detectado
+ * Retorno:
+ *      Puntero a Book inicializado o NULL en caso de error/exit/comando desconocido
+ ******************************************************************************/
 Book* command_parse(const char *input, CommandCode *command_code){
     char buffer[MAX_INPUT];
     Book *book = NULL;
@@ -97,6 +122,24 @@ Book* command_parse(const char *input, CommandCode *command_code){
     return book;
 }
 
+/******************************************************************************
+ * Autores: Marco Manceñido y Guilherme Povedano
+ * Descripción:
+ *      Ejecuta el comando recibido sobre la base de datos, índice y lista
+ *      de huecos, según el tipo de operación.
+ * Parámetros:
+ *      datafile      - fichero de la base de datos
+ *      index         - puntero al índice
+ *      indexfile     - fichero de índice
+ *      deletedlist   - puntero a la lista de huecos
+ *      book          - Book con los datos del registro
+ *      deletedfile   - fichero de lista de huecos
+ *      strategy      - estrategia de asignación de huecos
+ *      command_code  - código de comando a ejecutar
+ *      filename_root - nombre base de los ficheros
+ * Retorno:
+ *      OK si se ejecuta correctamente, ERR en caso de error
+ ******************************************************************************/
 int command_execute(FILE *datafile, Index *index, FILE *indexfile, DeletedList *deletedlist, Book *book, FILE *deletedfile, int strategy, CommandCode command_code, char *filename_root){
     int aux = 0;
 
@@ -136,6 +179,20 @@ int command_execute(FILE *datafile, Index *index, FILE *indexfile, DeletedList *
     return 0;
 }
 
+/******************************************************************************
+ * Autores: Marco Manceñido y Guilherme Povedano
+ * Descripción:
+ *      Añade un registro a la base de datos, actualiza índice y lista de
+ *      huecos, y gestiona errores.
+ * Parámetros:
+ *      data_fp      - fichero de la base de datos
+ *      index        - puntero al índice
+ *      deletedlist  - puntero a la lista de huecos
+ *      book         - Book a añadir
+ *      strategy     - estrategia de huecos
+ * Retorno:
+ *      Código de error según resultado de la operación
+ ******************************************************************************/
 int command_add(FILE *data_fp, Index *index, DeletedList *deletedlist, Book *book, int strategy) {
     long int index_pos = NO_POS;
     long offset = NO_POS;
@@ -156,19 +213,19 @@ int command_add(FILE *data_fp, Index *index, DeletedList *deletedlist, Book *boo
         return BookExists;
     }
 
-    /* Search for a suitable deleted space */
+    /* Buscar hueco adecuado */
     index_pos = deletedlist_find(deletedlist, book_size, strategy);
     if (index_pos == ERR) {
         indexbook_free(indexbook);
         return ERR;
     }
 
-    /* If a suitable space was found, use it */
+    /* Si se encontró espacio reutilizable, usarlo */
     if (index_pos != NO_POS && index_pos != NOT_FOUND){
         offset = (long)deletedlist_get_offset(deletedlist, index_pos);
     }
 
-    /* Write the book to the database (either at offset or at end) */
+    /* Escribir el registro en la base de datos */
     write_pos = database_add(data_fp, offset, book_get_id(book), book_get_title(book), 
                               book_get_isbn(book), book_get_publishedby(book));
     if (write_pos == ERR) {
@@ -176,20 +233,20 @@ int command_add(FILE *data_fp, Index *index, DeletedList *deletedlist, Book *boo
         return WriteError;
     }
 
-    /* Update the indexbook with the actual write position */
+    /* Actualizar offset en IndexBook */
     if (indexbook_set_offset(indexbook, write_pos) == ERR){
         indexbook_free(indexbook);
         return ERR;
     }
 
-    /* Update deleted list - this will remove or update the used space */
+    /* Actualizar lista de huecos */
     ret = deletedlist_update(deletedlist, indexbook, strategy, ADD);
     if (ret == ERR) {
         indexbook_free(indexbook);
         return ERR;
     }
 
-    /* Add to index */
+    /* Añadir a índice */
     ret = index_add(index, indexbook);
     if (ret != OK) {
         indexbook_free(indexbook);
@@ -200,6 +257,20 @@ int command_add(FILE *data_fp, Index *index, DeletedList *deletedlist, Book *boo
     return NoError;
 }
 
+/******************************************************************************
+ * Autores: Marco Manceñido y Guilherme Povedano
+ * Descripción:
+ *      Elimina un registro de la base de datos y actualiza índice y lista 
+ *      de huecos.
+ * Parámetros:
+ *      data_fp      - fichero de la base de datos
+ *      index        - puntero al índice
+ *      deletedlist  - puntero a la lista de huecos
+ *      strategy     - estrategia de huecos
+ *      key          - book_id del registro a eliminar
+ * Retorno:
+ *      OK si se elimina correctamente, NOT_FOUND si no existe, ERR en error
+ ******************************************************************************/
 int command_del(FILE *data_fp, Index *index, DeletedList *deletedlist, int strategy, int key) {
     int pos;
 
@@ -231,6 +302,21 @@ int command_del(FILE *data_fp, Index *index, DeletedList *deletedlist, int strat
     return OK;
 }
 
+/******************************************************************************
+ * Autores: Marco Manceñido y Guilherme Povedano
+ * Descripción:
+ *      Guarda los ficheros de índice y lista de huecos al salir de la base
+ *      de datos.
+ * Parámetros:
+ *      datafile      - fichero de la base de datos
+ *      index         - puntero al índice
+ *      filename_root - nombre base de los ficheros
+ *      deletedlist   - lista de huecos
+ *      deletedfile   - fichero de lista de huecos
+ *      strategy      - estrategia de huecos
+ * Retorno:
+ *      OK si se guardan correctamente, ERR en caso de error
+ ******************************************************************************/
 int command_exit(FILE *datafile, Index *index, char *filename_root, DeletedList *deletedlist, FILE *deletedfile, int strategy) {
     char filename[NAME_MAX + 4];
 
@@ -244,6 +330,17 @@ int command_exit(FILE *datafile, Index *index, char *filename_root, DeletedList 
     return OK;
 }
 
+/******************************************************************************
+ * Autores: Marco Manceñido y Guilherme Povedano
+ * Descripción:
+ *      Busca un registro por book_id e imprime su información.
+ * Parámetros:
+ *      data_fp - fichero de la base de datos
+ *      index   - puntero al índice
+ *      key     - book_id a buscar
+ * Retorno:
+ *      OK si se encuentra, ERR si hay error
+ ******************************************************************************/
 int command_find(FILE *data_fp, Index *index, int key) {
     if (data_fp == NULL || index == NULL){
         return ERR;
@@ -256,6 +353,16 @@ int command_find(FILE *data_fp, Index *index, int key) {
     return OK;
 }
 
+/******************************************************************************
+ * Autores: Marco Manceñido y Guilherme Povedano
+ * Descripción:
+ *      Imprime todos los registros almacenados en la base de datos.
+ * Parámetros:
+ *      data_fp - fichero de la base de datos
+ *      index   - puntero al índice
+ * Retorno:
+ *      OK si imprime correctamente, ERR si hay error
+ ******************************************************************************/
 int command_print_rec(FILE *data_fp, Index *index) {
     if (data_fp == NULL || index == NULL){
         return ERR;
@@ -265,6 +372,15 @@ int command_print_rec(FILE *data_fp, Index *index) {
     return OK;
 }
 
+/******************************************************************************
+ * Autores: Marco Manceñido y Guilherme Povedano
+ * Descripción:
+ *      Imprime la lista de huecos disponibles.
+ * Parámetros:
+ *      deletedlist - puntero a la lista de huecos
+ * Retorno:
+ *      OK si imprime correctamente, ERR si hay error
+ ******************************************************************************/
 int command_print_lst(DeletedList *deletedlist) {
     if (!deletedlist) return ERR;
 
@@ -273,6 +389,15 @@ int command_print_lst(DeletedList *deletedlist) {
     return OK;
 }
 
+/******************************************************************************
+ * Autores: Marco Manceñido y Guilherme Povedano
+ * Descripción:
+ *      Imprime el índice de libros almacenados.
+ * Parámetros:
+ *      index - puntero al índice
+ * Retorno:
+ *      OK si imprime correctamente, ERR si hay error
+ ******************************************************************************/
 int command_print_ind(Index *index) {
     if (!index) return ERR;
 
@@ -281,8 +406,24 @@ int command_print_ind(Index *index) {
     return OK;
 }
 
+/******************************************************************************
+ * Autores: Marco Manceñido y Guilherme Povedano
+ * Descripción:
+ *      Manejo de comandos desconocidos.
+ * Retorno:
+ *      OK siempre (solo imprime mensaje en otras implementaciones)
+ ******************************************************************************/
 int command_unknown() {return OK;}
 
+/******************************************************************************
+ * Autores: Marco Manceñido y Guilherme Povedano
+ * Descripción:
+ *      Interpreta el código de salida de command_add y genera mensajes 
+ *      adecuados para el usuario.
+ * Parámetros:
+ *      book      - puntero al libro afectado
+ *      exit_code - código de salida de command_add
+ ******************************************************************************/
 void command_add_interpret_exit(Book *book, int exit_code) {
 
         switch(exit_code)

@@ -1,3 +1,9 @@
+/******************************************************************************
+ * Autores: Marco Manceñido y Guilherme Povedano
+ * Descripción:
+ *      Cabecera con tipos, constantes y enumeraciones usadas en la base de datos.
+ ******************************************************************************/
+
 #ifndef TYPES_H
 #define TYPES_H
 
