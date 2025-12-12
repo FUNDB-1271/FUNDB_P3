@@ -41,8 +41,14 @@ deletedlist.o: deletedlist.c deletedlist.h
 book.o: book.c book.h
 	$(CC) $(CFLAGS) -c $<
 
-valgrind: $(EXE)
+valgrind_first_fit: $(EXE)
 	valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes ./$(EXE) first_fit $(DBNAME)
+
+valgrind_best_fit: $(EXE)
+	valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes ./$(EXE) best_fit $(DBNAME)
+
+valgrind_worst_fit: $(EXE)
+	valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes ./$(EXE) worst_fit $(DBNAME)
 
 clean: 
 	rm *.o $(EXE) 
