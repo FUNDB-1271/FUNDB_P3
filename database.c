@@ -232,7 +232,7 @@ int database_print_size(FILE *fdb, size_t size, long offset)
 {
     long aux = 0;
 
-    if (!fdb || offset < 0 || size < 0) return ERR;
+    if (!fdb || offset < 0) return ERR;
 
     if ((aux = (long) fseek(fdb, 0, SEEK_END)) != 0) return ERR;
 

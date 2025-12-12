@@ -69,7 +69,7 @@ add_data_test:
 	@echo "Executing add_data_test.sh"
 	@chmod +x add_data_test.sh
 	rm -f test.ind test.db test.lst
-	./add_data_test.sh
+	expect add_data_test.sh
 	@chmod -x add_data_test.sh
 
 
@@ -77,63 +77,63 @@ add_delete_test_01:
 	@echo "Executing add_delete_test_01.sh"
 	@chmod +x add_delete_test_01.sh
 	rm -f test.ind test.db test.lst
-	./add_delete_test_01.sh	
+	expect add_delete_test_01.sh	
 	@chmod -x add_data_test.sh
 
 add_delete_test_02: 
 	@echo "Executing add_delete_test_02.sh"
 	@chmod +x add_delete_test_02.sh
 	rm -f test.ind test.db test.lst
-	./add_delete_test_02.sh
+	expect add_delete_test_02.sh
 	@chmod -x add_data_test.sh
 
 add_delete_test_03: 
 	@echo "Executing add_delete_test_03.sh"
 	@chmod +x add_delete_test_03.sh
 	rm -f test.ind test.db test.lst
-	./add_delete_test_03.sh
+	expect add_delete_test_03.sh
 	@chmod -x add_data_test.sh
 
 add_delete_test_04: 
 	@echo "Executing add_delete_test_04.sh"
 	@chmod +x add_delete_test_04.sh
 	rm -f test.ind test.db test.lst
-	./add_delete_test_04.sh
+	expect add_delete_test_04.sh
 	@chmod -x add_data_test.sh
 
 add_index_test:
 	@echo "Executing add_index_test.sh"
 	@chmod +x add_index_test.sh
 	rm -f test.ind test.db test.lst
-	./add_index_test.sh
+	expect add_index_test.sh
 	@chmod -x add_data_test.sh
 
 cli_tests:
 	@echo "Executing cli_tests.sh"
 	@chmod +x cli_tests.sh
 	rm -f test.ind test.db test.lst
-	./cli_tests.sh
+	expect cli_tests.sh
 	@chmod -x add_data_test.sh
 
 many_entries:
 	@echo "Executing many_entries.sh"
 	@chmod +x many_entries.sh
 	rm -f test.ind test.db test.lst
-	./many_entries.sh
+	expect many_entries.sh
 	@chmod -x add_data_test.sh
 
 reload_index:
 	@echo "Executing reload_index.sh"
 	@chmod +x reload_index.sh
 	rm -f test.ind test.db test.lst
-	./reload_index.sh
+	expect reload_index.sh
 	@chmod -x add_data_test.sh
 
 use_deleted_books:
 	@echo "Executing test_use_deleted_books.sh"
 	@chmod +x test_use_deleted_books.sh
 	rm -f test.ind test.db test.lst
-	./test_use_deleted_books.sh
+	expect test_use_deleted_books.sh
 	@chmod -x add_data_test.sh
 
 # Regla para listar todos los tests disponibles
