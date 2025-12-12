@@ -69,7 +69,7 @@ add_data_test:
 	@echo "Executing add_data_test.sh"
 	@chmod +x add_data_test.sh
 	rm -f test.ind test.db test.lst
-	./add_data_test.sh
+	expect add_data_test.sh
 	@chmod -x add_data_test.sh
 
 
